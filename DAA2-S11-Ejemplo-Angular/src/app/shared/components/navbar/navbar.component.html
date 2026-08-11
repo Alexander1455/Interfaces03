@@ -1,0 +1,37 @@
+<header class="top-navbar">
+  <div class="navbar-brand-section">
+    <div class="brand-logo-badge">
+      <i class="bi bi-mortarboard-fill"></i>
+    </div>
+    <div class="brand-info">
+      <span class="brand-title">IDAT PORTAL</span>
+      <span class="brand-subtitle">Gestión Académica</span>
+    </div>
+  </div>
+
+  <div class="navbar-right-section" *ngIf="usuario$ | async as user">
+    <div class="user-chip">
+      <img [src]="user.avatar || 'https://api.dicebear.com/7.x/bottts/svg?seed=user'" alt="Avatar" class="user-avatar" />
+      <div class="user-details">
+        <span class="user-name">{{ user.nombre }}</span>
+        <span class="user-badge" [ngClass]="{
+          'badge-role-admin': user.rol === 'ADMIN',
+          'badge-role-profesor': user.rol === 'PROFESOR',
+          'badge-role-estudiante': user.rol === 'ESTUDIANTE'
+        }">
+          <i class="bi" [ngClass]="{
+            'bi-shield-check': user.rol === 'ADMIN',
+            'bi-person-video3': user.rol === 'PROFESOR',
+            'bi-backpack': user.rol === 'ESTUDIANTE'
+          }"></i>
+          {{ user.rol | appRol }}
+        </span>
+      </div>
+    </div>
+
+    <button class="btn btn-secondary btn-sm logout-btn" (click)="logout()" title="Cerrar Sesión">
+      <i class="bi bi-box-arrow-right"></i>
+      <span>Salir</span>
+    </button>
+  </div>
+</header>

@@ -1,0 +1,35 @@
+<aside class="sidebar-container">
+  <div class="sidebar-menu">
+    <div class="menu-label">PRINCIPAL</div>
+
+    <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+      <i class="bi bi-grid-1x2-fill nav-icon"></i>
+      <span class="nav-text">Panel Principal</span>
+    </a>
+
+    <a routerLink="/cursos" routerLinkActive="active" class="nav-item">
+      <i class="bi bi-journal-bookmark-fill nav-icon"></i>
+      <span class="nav-text">Gestión de Cursos</span>
+      <span class="badge badge-primary nav-pill">Académico</span>
+    </a>
+
+    <!-- Menú exclusivo para Administradores con *appHasRole -->
+    <div class="menu-label" *appHasRole="['ADMIN']">ADMINISTRACIÓN</div>
+
+    <a routerLink="/usuarios" routerLinkActive="active" class="nav-item" *appHasRole="['ADMIN']">
+      <i class="bi bi-people-fill nav-icon"></i>
+      <span class="nav-text">Gestión de Usuarios</span>
+      <span class="badge badge-role-admin nav-pill">Admin</span>
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="quick-status-card">
+      <div class="status-indicator online"></div>
+      <div class="status-info">
+        <span class="status-title">API REST Activa</span>
+        <span class="status-sub">JWT Bearer Auth</span>
+      </div>
+    </div>
+  </div>
+</aside>

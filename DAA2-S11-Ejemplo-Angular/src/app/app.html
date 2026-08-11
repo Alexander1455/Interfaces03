@@ -1,0 +1,13 @@
+<div class="app-layout-container" *ngIf="showLayout; else standaloneOutlet">
+  <app-navbar></app-navbar>
+  <div class="app-body-layout">
+    <app-sidebar></app-sidebar>
+    <main class="main-content-wrapper">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>
+
+<ng-template #standaloneOutlet>
+  <router-outlet></router-outlet>
+</ng-template>

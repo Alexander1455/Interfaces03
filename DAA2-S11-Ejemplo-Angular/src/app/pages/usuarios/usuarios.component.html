@@ -1,0 +1,207 @@
+<div class="page-container">
+  <!-- Encabezado -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-people-fill"></i> Gestión Integral de Usuarios
+      </h1>
+      <p class="page-subtitle">
+        Control centralizado de cuentas de acceso, roles y estados de actividad de la comunidad educativa.
+      </p>
+    </div>
+
+    <!-- Botón de Creación -->
+    <div>
+      <button class="btn btn-primary" (click)="abrirModalCrear()">
+        <i class="bi bi-person-plus-fill"></i> Registrar Usuario
+      </button>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros -->
+  <div class="card mb-4 filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        placeholder="Buscar por nombre, correo, rol o código institucional..."
+        [(ngModel)]="searchTerm"
+      />
+    </div>
+    <div class="filter-stats">
+      <span>Total Registros: <strong>{{ usuarios.length }}</strong></span>
+    </div>
+  </div>
+
+  <!-- Notificación Toast -->
+  <div class="alert-toast" [ngClass]="toastType" *ngIf="toastMessage">
+    <i class="bi bi-info-circle-fill"></i>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <!-- Tabla de Usuarios -->
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre Completo</th>
+            <th>Correo Electrónico</th>
+            <th>Rol Asignado</th>
+            <th>Teléfono</th>
+            <th>Fecha Registro</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Uso de Pipes personalizados: appFiltroBusqueda, appRol, appEstado -->
+          <tr *ngFor="let u of (usuarios | appFiltroBusqueda:searchTerm:['nombreCompleto', 'email', 'rol', 'codigoInstitucional'])">
+            <td>
+              <strong>{{ u.codigoInstitucional }}</strong>
+            </td>
+            <td>
+              <div class="user-cell">
+                <i class="bi bi-person-circle user-avatar-icon"></i>
+                <span>{{ u.nombreCompleto }}</span>
+              </div>
+            </td>
+            <td>
+              <a [href]="'mailto:' + u.email" class="email-link">{{ u.email }}</a>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-role-admin': u.rol === 'ADMIN',
+                'badge-role-profesor': u.rol === 'PROFESOR',
+                'badge-role-estudiante': u.rol === 'ESTUDIANTE'
+              }">
+                {{ u.rol | appRol }}
+              </span>
+            </td>
+            <td>{{ u.telefono || 'No registrado' }}</td>
+            <td>{{ u.fechaCreacion }}</td>
+            <td>
+              <span class="badge" [ngClass]="u.estado | appEstado:'badge'">
+                {{ u.estado | appEstado }}
+              </span>
+            </td>
+            <td class="text-right actions-cell">
+              <button class="btn btn-secondary btn-sm btn-icon" title="Editar" (click)="abrirModalEditar(u)">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" (click)="eliminarUsuario(u.id, u.nombreCompleto)">
+                <i class="bi bi-trash3-fill"></i>
+              </button>
+            </td>
+          </tr>
+
+          <tr *ngIf="(usuarios | appFiltroBusqueda:searchTerm:['nombreCompleto', 'email', 'rol', 'codigoInstitucional']).length === 0">
+            <td colspan="8" class="text-center empty-row">
+              <i class="bi bi-person-x empty-icon"></i>
+              <p>No se encontraron usuarios que coincidan con "{{ searchTerm }}".</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL REACTIVO PARA USUARIOS -->
+  <div class="modal-overlay" *ngIf="isModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="bi bi-person-gear"></i>
+          {{ isEditing ? 'Actualizar Datos de Usuario' : 'Registrar Nuevo Usuario' }}
+        </h3>
+        <button class="btn-close" (click)="cerrarModal()">&times;</button>
+      </div>
+
+      <form [formGroup]="usuarioForm" (ngSubmit)="guardarUsuario()">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="nombreCompleto">Nombre y Apellidos *</label>
+            <input
+              id="nombreCompleto"
+              type="text"
+              class="form-control"
+              placeholder="Ej. Ing. Carlos Mendoza"
+              formControlName="nombreCompleto"
+              [class.is-invalid]="usuarioForm.get('nombreCompleto')?.invalid && usuarioForm.get('nombreCompleto')?.touched"
+            />
+            <div class="invalid-feedback" *ngIf="usuarioForm.get('nombreCompleto')?.invalid && usuarioForm.get('nombreCompleto')?.touched">
+              Ingrese el nombre completo (mínimo 4 caracteres).
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="email">Correo Institucional *</label>
+              <input
+                id="email"
+                type="email"
+                class="form-control"
+                placeholder="usuario@idat.edu.pe"
+                formControlName="email"
+                [class.is-invalid]="usuarioForm.get('email')?.invalid && usuarioForm.get('email')?.touched"
+              />
+              <div class="invalid-feedback" *ngIf="usuarioForm.get('email')?.invalid && usuarioForm.get('email')?.touched">
+                Formato de correo inválido.
+              </div>
+            </div>
+
+            <div class="form-group col-6">
+              <label class="form-label" for="rol">Rol de Acceso *</label>
+              <select id="rol" class="form-control" formControlName="rol">
+                <option *ngFor="let r of rolesDisponibles" [value]="r">
+                  {{ r | appRol }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="codigoInstitucional">Código Institucional *</label>
+              <input
+                id="codigoInstitucional"
+                type="text"
+                class="form-control"
+                placeholder="Ej. EST-2025-01"
+                formControlName="codigoInstitucional"
+              />
+            </div>
+
+            <div class="form-group col-6">
+              <label class="form-label" for="telefono">Teléfono / Celular</label>
+              <input
+                id="telefono"
+                type="text"
+                class="form-control"
+                placeholder="+51 987 654 321"
+                formControlName="telefono"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="estado">Estado de la Cuenta</label>
+            <select id="estado" class="form-control" formControlName="estado">
+              <option [ngValue]="true">Activo (Permite Login)</option>
+              <option [ngValue]="false">Inactivo (Acceso Bloqueado)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> {{ isEditing ? 'Guardar Cambios' : 'Crear Usuario' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

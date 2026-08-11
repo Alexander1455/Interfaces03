@@ -1,0 +1,25 @@
+<div class="error-page-wrapper">
+  <div class="error-card">
+    <div class="error-badge">
+      <i class="bi bi-shield-x"></i>
+    </div>
+    <span class="error-code">403</span>
+    <h2>Acceso Restringido</h2>
+    <p>
+      Tu rol de usuario actual
+      <strong *ngIf="authService.currentUser$ | async as user">
+        ({{ user.rol | appRol }})
+      </strong>
+      no cuenta con los privilegios suficientes para ingresar a este módulo protegido por el
+      <code>RoleGuard</code>.
+    </p>
+    <div class="error-actions">
+      <a routerLink="/dashboard" class="btn btn-primary">
+        <i class="bi bi-arrow-left"></i> Volver al Dashboard
+      </a>
+      <a routerLink="/cursos" class="btn btn-secondary">
+        <i class="bi bi-journal"></i> Ir al Catálogo de Cursos
+      </a>
+    </div>
+  </div>
+</div>

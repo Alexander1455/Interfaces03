@@ -1,0 +1,269 @@
+<div class="page-container">
+  <!-- Encabezado de Página -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-journal-bookmark-fill"></i> Catálogo y Gestión de Cursos
+      </h1>
+      <p class="page-subtitle">
+        Administración centralizada de asignaturas académicas, docentes y horarios con protección JWT.
+      </p>
+    </div>
+
+    <!-- Botón visible solo para ADMIN y PROFESOR mediante *appHasRole -->
+    <div *appHasRole="['ADMIN', 'PROFESOR']">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">
+        <i class="bi bi-plus-circle-fill"></i> Registrar Nuevo Curso
+      </button>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros y Búsqueda en Tiempo Real -->
+  <div class="card mb-4 filter-bar">
+    <div class="search-box">
+      <i class="bi bi-search search-icon"></i>
+      <input
+        type="text"
+        class="form-control search-input"
+        placeholder="Buscar por nombre de curso, código, categoría o docente..."
+        [(ngModel)]="searchTerm"
+      />
+    </div>
+    <div class="filter-stats">
+      <span>Total Cursos: <strong>{{ cursos.length }}</strong></span>
+    </div>
+  </div>
+
+  <!-- Notificación Toast -->
+  <div class="alert-toast" [ngClass]="toastType" *ngIf="toastMessage">
+    <i class="bi bi-info-circle-fill"></i>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <!-- Tabla Dinámica con Pipe FiltroBusqueda y EstadoPipe -->
+  <div class="card table-card">
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre de Asignatura</th>
+            <th>Categoría</th>
+            <th>Docente</th>
+            <th>Créditos</th>
+            <th>Cupos</th>
+            <th>Horario</th>
+            <th>Estado</th>
+            <th class="text-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Uso de Pipes personalizados: appFiltroBusqueda y appEstado -->
+          <tr *ngFor="let c of (cursos | appFiltroBusqueda:searchTerm:['nombre', 'codigo', 'categoria', 'docenteNombre'])">
+            <td>
+              <span class="badge badge-purple">{{ c.codigo }}</span>
+            </td>
+            <td>
+              <strong>{{ c.nombre }}</strong>
+              <div class="text-muted-desc">{{ c.descripcion }}</div>
+            </td>
+            <td>
+              <span class="badge badge-primary">{{ c.categoria }}</span>
+            </td>
+            <td>
+              <i class="bi bi-person-fill text-muted"></i> {{ c.docenteNombre }}
+            </td>
+            <td>
+              <span class="badge badge-warning">{{ c.creditos }} pts</span>
+            </td>
+            <td>
+              <span [class.text-danger]="c.cuposDisponibles <= 5">
+                {{ c.cuposDisponibles }}/{{ c.cuposTotales }}
+              </span>
+            </td>
+            <td>
+              <small class="text-secondary"><i class="bi bi-clock"></i> {{ c.horario }}</small>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="c.estado | appEstado:'badge'">
+                {{ c.estado | appEstado }}
+              </span>
+            </td>
+            <td class="text-right actions-cell">
+              <!-- Acciones de Edición para Admin y Profesor -->
+              <button
+                class="btn btn-secondary btn-sm btn-icon"
+                title="Editar Curso"
+                (click)="abrirModalEditar(c)"
+                *appHasRole="['ADMIN', 'PROFESOR']"
+              >
+                <i class="bi bi-pencil-square"></i>
+              </button>
+
+              <!-- Acciones de Eliminación solo para Admin -->
+              <button
+                class="btn btn-danger btn-sm btn-icon"
+                title="Eliminar Curso"
+                (click)="eliminarCurso(c.id, c.nombre)"
+                *appHasRole="['ADMIN']"
+              >
+                <i class="bi bi-trash3-fill"></i>
+              </button>
+
+              <!-- Matrícula para Estudiante -->
+              <button
+                class="btn btn-success btn-sm"
+                title="Matricularse en el Curso"
+                (click)="matricularme(c)"
+                *appHasRole="['ESTUDIANTE']"
+              >
+                <i class="bi bi-check2-circle"></i> Matricularme
+              </button>
+            </td>
+          </tr>
+
+          <!-- Mensaje cuando no hay resultados de búsqueda -->
+          <tr *ngIf="(cursos | appFiltroBusqueda:searchTerm:['nombre', 'codigo', 'categoria', 'docenteNombre']).length === 0">
+            <td colspan="9" class="text-center empty-row">
+              <i class="bi bi-folder-x empty-icon"></i>
+              <p>No se encontraron cursos que coincidan con "{{ searchTerm }}".</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL REACTIVO PARA CREACIÓN Y EDICIÓN -->
+  <div class="modal-overlay" *ngIf="isModalOpen">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <i class="bi bi-journal-plus" *ngIf="!isEditing"></i>
+          <i class="bi bi-pencil-square" *ngIf="isEditing"></i>
+          {{ isEditing ? 'Actualizar Curso' : 'Registrar Nuevo Curso' }}
+        </h3>
+        <button class="btn-close" (click)="cerrarModal()">&times;</button>
+      </div>
+
+      <form [formGroup]="cursoForm" (ngSubmit)="guardarCurso()">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="codigo">Código de Curso *</label>
+              <input
+                id="codigo"
+                type="text"
+                class="form-control"
+                placeholder="Ej. DAA-301"
+                formControlName="codigo"
+                [class.is-invalid]="cursoForm.get('codigo')?.invalid && cursoForm.get('codigo')?.touched"
+              />
+              <div class="invalid-feedback" *ngIf="cursoForm.get('codigo')?.invalid && cursoForm.get('codigo')?.touched">
+                Código obligatorio en formato alfanumérico.
+              </div>
+            </div>
+
+            <div class="form-group col-6">
+              <label class="form-label" for="categoria">Categoría Académica *</label>
+              <select id="categoria" class="form-control" formControlName="categoria">
+                <option *ngFor="let cat of categoriasDisponibles" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="nombre">Nombre de la Asignatura *</label>
+            <input
+              id="nombre"
+              type="text"
+              class="form-control"
+              placeholder="Ej. Desarrollo de Interfaces 3"
+              formControlName="nombre"
+              [class.is-invalid]="cursoForm.get('nombre')?.invalid && cursoForm.get('nombre')?.touched"
+            />
+            <div class="invalid-feedback" *ngIf="cursoForm.get('nombre')?.invalid && cursoForm.get('nombre')?.touched">
+              Ingrese un nombre válido (mínimo 3 caracteres).
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="descripcion">Descripción y Competencias *</label>
+            <textarea
+              id="descripcion"
+              class="form-control"
+              rows="2"
+              placeholder="Detalle de los logros y temas del curso..."
+              formControlName="descripcion"
+              [class.is-invalid]="cursoForm.get('descripcion')?.invalid && cursoForm.get('descripcion')?.touched"
+            ></textarea>
+            <div class="invalid-feedback" *ngIf="cursoForm.get('descripcion')?.invalid && cursoForm.get('descripcion')?.touched">
+              Descripción requerida (mínimo 10 caracteres).
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="docenteId">Docente Titular *</label>
+              <select id="docenteId" class="form-control" formControlName="docenteId">
+                <option *ngFor="let doc of docentes" [value]="doc.id">{{ doc.nombreCompleto }}</option>
+              </select>
+            </div>
+
+            <div class="form-group col-6">
+              <label class="form-label" for="creditos">Créditos (1 - 10) *</label>
+              <input
+                id="creditos"
+                type="number"
+                class="form-control"
+                formControlName="creditos"
+                min="1"
+                max="10"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="cuposTotales">Cupos Totales *</label>
+              <input
+                id="cuposTotales"
+                type="number"
+                class="form-control"
+                formControlName="cuposTotales"
+                min="5"
+                max="100"
+              />
+            </div>
+
+            <div class="form-group col-6">
+              <label class="form-label" for="horario">Horario *</label>
+              <input
+                id="horario"
+                type="text"
+                class="form-control"
+                placeholder="Ej. Lun - Mie 19:00 - 21:30"
+                formControlName="horario"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="estado">Estado del Curso</label>
+            <select id="estado" class="form-control" formControlName="estado">
+              <option [ngValue]="true">Activo</option>
+              <option [ngValue]="false">Inactivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i> {{ isEditing ? 'Guardar Cambios' : 'Registrar Curso' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,119 @@
+<div class="login-wrapper">
+  <div class="login-left-panel">
+    <div class="brand-hero">
+      <div class="brand-logo-large">
+        <i class="bi bi-mortarboard-fill"></i>
+      </div>
+      <h1>IDAT PORTAL ACADÉMICO</h1>
+      <p class="hero-desc">
+        Sistema Centralizado de Gestión de Cursos, Usuarios y Control de Accesos mediante Autenticación JWT.
+      </p>
+      <div class="feature-bullets">
+        <div class="bullet-item">
+          <i class="bi bi-shield-lock-fill"></i>
+          <span>Seguridad con Token JWT & Interceptors</span>
+        </div>
+        <div class="bullet-item">
+          <i class="bi bi-person-badge-fill"></i>
+          <span>Enrutamiento con Guards por Roles (Admin, Docente, Alumno)</span>
+        </div>
+        <div class="bullet-item">
+          <i class="bi bi-speedometer2"></i>
+          <span>Single Page Application fluida y reactiva</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-right-panel">
+    <div class="login-card">
+      <div class="login-header">
+        <h2>Iniciar Sesión</h2>
+        <p>Ingrese sus credenciales institucionales para acceder a la plataforma</p>
+      </div>
+
+      <!-- Alerta de Error -->
+      <div class="alert alert-danger" *ngIf="errorMessage">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+        <div class="form-group">
+          <label class="form-label" for="email">
+            <i class="bi bi-envelope"></i> Correo Institucional
+          </label>
+          <input
+            id="email"
+            type="email"
+            class="form-control"
+            placeholder="ejemplo@idat.edu.pe"
+            formControlName="email"
+            [class.is-invalid]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
+          />
+          <div class="invalid-feedback" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+            <i class="bi bi-x-circle"></i> Ingrese un correo electrónico válido.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="clave">
+            <i class="bi bi-key"></i> Contraseña
+          </label>
+          <input
+            id="clave"
+            type="password"
+            class="form-control"
+            placeholder="••••••••"
+            formControlName="clave"
+            [class.is-invalid]="loginForm.get('clave')?.invalid && loginForm.get('clave')?.touched"
+          />
+          <div class="invalid-feedback" *ngIf="loginForm.get('clave')?.invalid && loginForm.get('clave')?.touched">
+            <i class="bi bi-x-circle"></i> Ingrese su contraseña (mínimo 4 caracteres).
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block submit-btn" [disabled]="isLoading">
+          <span *ngIf="!isLoading">
+            <i class="bi bi-box-arrow-in-right"></i> Ingresar al Sistema
+          </span>
+          <span *ngIf="isLoading">
+            <i class="bi bi-arrow-repeat spin"></i> Verificando token JWT...
+          </span>
+        </button>
+      </form>
+
+      <!-- Botones de Prueba Rápida de Roles para la Rúbrica -->
+      <div class="quick-demo-section">
+        <div class="demo-divider">
+          <span>Acceso Rápido para Evaluación</span>
+        </div>
+        <div class="demo-buttons-grid">
+          <button class="btn-demo admin" (click)="fillQuickRole('admin@idat.edu.pe', 'admin123')">
+            <i class="bi bi-shield-fill-check"></i>
+            <div>
+              <strong>Rol: Admin</strong>
+              <small>admin@idat.edu.pe</small>
+            </div>
+          </button>
+
+          <button class="btn-demo teacher" (click)="fillQuickRole('profesor@idat.edu.pe', 'prof123')">
+            <i class="bi bi-person-video3"></i>
+            <div>
+              <strong>Rol: Docente</strong>
+              <small>profesor@idat.edu.pe</small>
+            </div>
+          </button>
+
+          <button class="btn-demo student" (click)="fillQuickRole('estudiante@idat.edu.pe', 'est123')">
+            <i class="bi bi-backpack-fill"></i>
+            <div>
+              <strong>Rol: Alumno</strong>
+              <small>estudiante@idat.edu.pe</small>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

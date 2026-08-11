@@ -1,0 +1,18 @@
+.app-layout-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-body-layout {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 70px);
+}
+
+.main-content-wrapper {
+  flex: 1;
+  background-color: var(--bg-main);
+  min-width: 0;
+  overflow-y: auto;
+}
