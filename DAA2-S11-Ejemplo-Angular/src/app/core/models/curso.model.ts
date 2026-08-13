@@ -28,3 +28,10 @@ export interface CursoCreateDto {
 export interface CursoUpdateDto extends CursoCreateDto {
   id: number;
 }
+
+export interface Matricula {
+  id: number;
+  estudianteId: number;
+  cursoId: number;
+  fechaMatricula: string;
+}
