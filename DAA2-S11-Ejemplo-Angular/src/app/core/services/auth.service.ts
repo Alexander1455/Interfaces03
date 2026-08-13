@@ -16,15 +16,25 @@ export class AuthService {
   private currentUserSubject: BehaviorSubject<UsuarioSesion | null>;
   public currentUser$: Observable<UsuarioSesion | null>;
 
+  private isBrowser(): boolean {
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+  }
+
   constructor(
     private http: HttpClient,
     private router: Router,
     private mockBackend: MockBackendService
   ) {
-    const savedUser = localStorage.getItem(this.USER_KEY);
-    this.currentUserSubject = new BehaviorSubject<UsuarioSesion | null>(
-      savedUser ? JSON.parse(savedUser) : null
-    );
+    let savedUser = null;
+    if (this.isBrowser()) {
+      try {
+        const stored = localStorage.getItem(this.USER_KEY);
+        savedUser = stored ? JSON.parse(stored) : null;
+      } catch (e) {
+        console.warn('Error parsing user session from localStorage', e);
+      }
+    }
+    this.currentUserSubject = new BehaviorSubject<UsuarioSesion | null>(savedUser);
     this.currentUser$ = this.currentUserSubject.asObservable();
   }
 
@@ -44,19 +54,24 @@ export class AuthService {
   }
 
   private setSession(authResult: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, authResult.token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(authResult.usuario));
+    if (this.isBrowser()) {
+      localStorage.setItem(this.TOKEN_KEY, authResult.token);
+      localStorage.setItem(this.USER_KEY, JSON.stringify(authResult.usuario));
+    }
     this.currentUserSubject.next(authResult.usuario);
   }
 
   public logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
+    if (this.isBrowser()) {
+      localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
+    }
     this.currentUserSubject.next(null);
     this.router.navigate(['/login']);
   }
 
   public getToken(): string | null {
+    if (!this.isBrowser()) return null;
     return localStorage.getItem(this.TOKEN_KEY);
   }
 

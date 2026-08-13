@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Curso, CursoCreateDto, CursoUpdateDto } from '../models/curso.model';
+import { Curso, CursoCreateDto, CursoUpdateDto, Matricula } from '../models/curso.model';
 import { MockBackendService } from './mock-backend.service';
 
 @Injectable({
@@ -42,6 +42,30 @@ export class CursoService {
 
   public eliminarCurso(id: number): Observable<boolean> {
     return this.mockBackend.deleteCurso(id).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  public getMatriculas(estudianteId?: number): Observable<Matricula[]> {
+    return this.mockBackend.getMatriculas(estudianteId).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  public getCursosMatriculados(estudianteId: number): Observable<Curso[]> {
+    return this.mockBackend.getCursosMatriculados(estudianteId).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  public matricularEstudiante(estudianteId: number, cursoId: number): Observable<Matricula> {
+    return this.mockBackend.matricularEstudiante(estudianteId, cursoId).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  public desmatricularEstudiante(estudianteId: number, cursoId: number): Observable<boolean> {
+    return this.mockBackend.desmatricularEstudiante(estudianteId, cursoId).pipe(
       catchError(this.handleError)
     );
   }

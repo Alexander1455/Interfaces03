@@ -3,7 +3,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, UserRole } from '../models/auth.model';
 import { Usuario, UsuarioCreateDto, UsuarioUpdateDto } from '../models/usuario.model';
-import { Curso, CursoCreateDto, CursoUpdateDto } from '../models/curso.model';
+import { Curso, CursoCreateDto, CursoUpdateDto, Matricula } from '../models/curso.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,6 +11,14 @@ import { Curso, CursoCreateDto, CursoUpdateDto } from '../models/curso.model';
 export class MockBackendService {
   private readonly USERS_KEY = 'idat_academic_users';
   private readonly COURSES_KEY = 'idat_academic_courses';
+  private readonly ENROLLMENTS_KEY = 'idat_academic_enrollments';
+
+  private defaultEnrollments: Matricula[] = [
+    { id: 1, estudianteId: 3, cursoId: 1, fechaMatricula: '2025-03-05' },
+    { id: 2, estudianteId: 3, cursoId: 3, fechaMatricula: '2025-03-06' },
+    { id: 3, estudianteId: 5, cursoId: 1, fechaMatricula: '2025-03-10' },
+    { id: 4, estudianteId: 5, cursoId: 2, fechaMatricula: '2025-03-11' }
+  ];
 
   private defaultUsers: Usuario[] = [
     {
@@ -128,18 +136,63 @@ export class MockBackendService {
     this.initStorage();
   }
 
-  private initStorage(): void {
-    if (!localStorage.getItem(this.USERS_KEY)) {
-      localStorage.setItem(this.USERS_KEY, JSON.stringify(this.defaultUsers));
+  private isBrowser(): boolean {
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+  }
+
+  private getStoredUsers(): Usuario[] {
+    if (!this.isBrowser()) return [...this.defaultUsers];
+    const data = localStorage.getItem(this.USERS_KEY);
+    return data ? JSON.parse(data) : [...this.defaultUsers];
+  }
+
+  private setStoredUsers(users: Usuario[]): void {
+    if (this.isBrowser()) {
+      localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
     }
-    if (!localStorage.getItem(this.COURSES_KEY)) {
-      localStorage.setItem(this.COURSES_KEY, JSON.stringify(this.defaultCourses));
+  }
+
+  private getStoredCourses(): Curso[] {
+    if (!this.isBrowser()) return [...this.defaultCourses];
+    const data = localStorage.getItem(this.COURSES_KEY);
+    return data ? JSON.parse(data) : [...this.defaultCourses];
+  }
+
+  private setStoredCourses(courses: Curso[]): void {
+    if (this.isBrowser()) {
+      localStorage.setItem(this.COURSES_KEY, JSON.stringify(courses));
+    }
+  }
+
+  private getStoredEnrollments(): Matricula[] {
+    if (!this.isBrowser()) return [...this.defaultEnrollments];
+    const data = localStorage.getItem(this.ENROLLMENTS_KEY);
+    return data ? JSON.parse(data) : [...this.defaultEnrollments];
+  }
+
+  private setStoredEnrollments(enrollments: Matricula[]): void {
+    if (this.isBrowser()) {
+      localStorage.setItem(this.ENROLLMENTS_KEY, JSON.stringify(enrollments));
+    }
+  }
+
+  private initStorage(): void {
+    if (this.isBrowser()) {
+      if (!localStorage.getItem(this.USERS_KEY)) {
+        localStorage.setItem(this.USERS_KEY, JSON.stringify(this.defaultUsers));
+      }
+      if (!localStorage.getItem(this.COURSES_KEY)) {
+        localStorage.setItem(this.COURSES_KEY, JSON.stringify(this.defaultCourses));
+      }
+      if (!localStorage.getItem(this.ENROLLMENTS_KEY)) {
+        localStorage.setItem(this.ENROLLMENTS_KEY, JSON.stringify(this.defaultEnrollments));
+      }
     }
   }
 
   // --- AUTENTICACIÓN & GENERACIÓN DE JWT SIMULADO ---
   public login(req: LoginRequest): Observable<AuthResponse> {
-    const users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    const users: Usuario[] = this.getStoredUsers();
     const user = users.find(u => u.email.toLowerCase() === req.email.toLowerCase());
 
     // Validar credenciales predefinidas o por defecto
@@ -201,12 +254,12 @@ export class MockBackendService {
 
   // --- CRUD USUARIOS ---
   public getUsuarios(): Observable<Usuario[]> {
-    const users = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    const users = this.getStoredUsers();
     return of(users).pipe(delay(200));
   }
 
   public getUsuarioById(id: number): Observable<Usuario> {
-    const users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    const users: Usuario[] = this.getStoredUsers();
     const user = users.find(u => u.id === id);
     if (!user) {
       return throwError(() => ({ status: 404, error: { message: 'Usuario no encontrado' } }));
@@ -215,7 +268,7 @@ export class MockBackendService {
   }
 
   public createUsuario(dto: UsuarioCreateDto): Observable<Usuario> {
-    const users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    const users: Usuario[] = this.getStoredUsers();
     
     // Validar correo duplicado
     if (users.some(u => u.email.toLowerCase() === dto.email.toLowerCase())) {
@@ -235,12 +288,12 @@ export class MockBackendService {
     };
 
     users.push(nuevoUsuario);
-    localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+    this.setStoredUsers(users);
     return of(nuevoUsuario).pipe(delay(300));
   }
 
   public updateUsuario(dto: UsuarioUpdateDto): Observable<Usuario> {
-    let users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    let users: Usuario[] = this.getStoredUsers();
     const index = users.findIndex(u => u.id === dto.id);
 
     if (index === -1) {
@@ -257,12 +310,12 @@ export class MockBackendService {
       telefono: dto.telefono
     };
 
-    localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+    this.setStoredUsers(users);
     return of(users[index]).pipe(delay(250));
   }
 
   public deleteUsuario(id: number): Observable<boolean> {
-    let users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    let users: Usuario[] = this.getStoredUsers();
     const initialLen = users.length;
     users = users.filter(u => u.id !== id);
 
@@ -270,18 +323,18 @@ export class MockBackendService {
       return throwError(() => ({ status: 404, error: { message: 'Usuario no encontrado para eliminar.' } }));
     }
 
-    localStorage.setItem(this.USERS_KEY, JSON.stringify(users));
+    this.setStoredUsers(users);
     return of(true).pipe(delay(250));
   }
 
   // --- CRUD CURSOS ---
   public getCursos(): Observable<Curso[]> {
-    const courses = JSON.parse(localStorage.getItem(this.COURSES_KEY) || '[]');
+    const courses = this.getStoredCourses();
     return of(courses).pipe(delay(200));
   }
 
   public getCursoById(id: number): Observable<Curso> {
-    const courses: Curso[] = JSON.parse(localStorage.getItem(this.COURSES_KEY) || '[]');
+    const courses: Curso[] = this.getStoredCourses();
     const course = courses.find(c => c.id === id);
     if (!course) {
       return throwError(() => ({ status: 404, error: { message: 'Curso no encontrado' } }));
@@ -290,8 +343,8 @@ export class MockBackendService {
   }
 
   public createCurso(dto: CursoCreateDto): Observable<Curso> {
-    const courses: Curso[] = JSON.parse(localStorage.getItem(this.COURSES_KEY) || '[]');
-    const users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    const courses: Curso[] = this.getStoredCourses();
+    const users: Usuario[] = this.getStoredUsers();
     const docente = users.find(u => u.id === Number(dto.docenteId));
 
     const newId = courses.length > 0 ? Math.max(...courses.map(c => c.id)) + 1 : 1;
@@ -311,13 +364,13 @@ export class MockBackendService {
     };
 
     courses.push(nuevoCurso);
-    localStorage.setItem(this.COURSES_KEY, JSON.stringify(courses));
+    this.setStoredCourses(courses);
     return of(nuevoCurso).pipe(delay(300));
   }
 
   public updateCurso(dto: CursoUpdateDto): Observable<Curso> {
-    let courses: Curso[] = JSON.parse(localStorage.getItem(this.COURSES_KEY) || '[]');
-    const users: Usuario[] = JSON.parse(localStorage.getItem(this.USERS_KEY) || '[]');
+    let courses: Curso[] = this.getStoredCourses();
+    const users: Usuario[] = this.getStoredUsers();
     const index = courses.findIndex(c => c.id === dto.id);
 
     if (index === -1) {
@@ -340,12 +393,12 @@ export class MockBackendService {
       horario: dto.horario
     };
 
-    localStorage.setItem(this.COURSES_KEY, JSON.stringify(courses));
+    this.setStoredCourses(courses);
     return of(courses[index]).pipe(delay(250));
   }
 
   public deleteCurso(id: number): Observable<boolean> {
-    let courses: Curso[] = JSON.parse(localStorage.getItem(this.COURSES_KEY) || '[]');
+    let courses: Curso[] = this.getStoredCourses();
     const initialLen = courses.length;
     courses = courses.filter(c => c.id !== id);
 
@@ -353,7 +406,93 @@ export class MockBackendService {
       return throwError(() => ({ status: 404, error: { message: 'Curso no encontrado para eliminar.' } }));
     }
 
-    localStorage.setItem(this.COURSES_KEY, JSON.stringify(courses));
+    this.setStoredCourses(courses);
     return of(true).pipe(delay(250));
   }
+
+  // --- GESTIÓN DE MATRÍCULAS ---
+  public getMatriculas(estudianteId?: number): Observable<Matricula[]> {
+    const enrollments = this.getStoredEnrollments();
+    if (estudianteId) {
+      return of(enrollments.filter(e => e.estudianteId === estudianteId)).pipe(delay(150));
+    }
+    return of(enrollments).pipe(delay(150));
+  }
+
+  public getCursosMatriculados(estudianteId: number): Observable<Curso[]> {
+    const enrollments = this.getStoredEnrollments().filter(e => e.estudianteId === estudianteId);
+    const courses = this.getStoredCourses();
+    const enrolledCourseIds = new Set(enrollments.map(e => e.cursoId));
+    const enrolledCourses = courses.filter(c => enrolledCourseIds.has(c.id));
+    return of(enrolledCourses).pipe(delay(200));
+  }
+
+  public matricularEstudiante(estudianteId: number, cursoId: number): Observable<Matricula> {
+    const enrollments = this.getStoredEnrollments();
+    const courses = this.getStoredCourses();
+    const courseIndex = courses.findIndex(c => c.id === cursoId);
+
+    if (courseIndex === -1) {
+      return throwError(() => ({ status: 404, error: { message: 'El curso seleccionado no existe.' } }));
+    }
+
+    const course = courses[courseIndex];
+
+    if (!course.estado) {
+      return throwError(() => ({ status: 400, error: { message: 'No es posible matricularse en un curso inactivo.' } }));
+    }
+
+    if (enrollments.some(e => e.estudianteId === estudianteId && e.cursoId === cursoId)) {
+      return throwError(() => ({ status: 400, error: { message: 'Ya te encuentras matriculado en este curso.' } }));
+    }
+
+    if (course.cuposDisponibles <= 0) {
+      return throwError(() => ({ status: 400, error: { message: 'No hay cupos disponibles para este curso.' } }));
+    }
+
+    // Reducir cupo disponible
+    courses[courseIndex] = {
+      ...course,
+      cuposDisponibles: course.cuposDisponibles - 1
+    };
+    this.setStoredCourses(courses);
+
+    const newId = enrollments.length > 0 ? Math.max(...enrollments.map(e => e.id)) + 1 : 1;
+    const nuevaMatricula: Matricula = {
+      id: newId,
+      estudianteId,
+      cursoId,
+      fechaMatricula: new Date().toISOString().split('T')[0]
+    };
+
+    enrollments.push(nuevaMatricula);
+    this.setStoredEnrollments(enrollments);
+
+    return of(nuevaMatricula).pipe(delay(250));
+  }
+
+  public desmatricularEstudiante(estudianteId: number, cursoId: number): Observable<boolean> {
+    let enrollments = this.getStoredEnrollments();
+    const initialLen = enrollments.length;
+    enrollments = enrollments.filter(e => !(e.estudianteId === estudianteId && e.cursoId === cursoId));
+
+    if (enrollments.length === initialLen) {
+      return throwError(() => ({ status: 404, error: { message: 'No se encontró la matrícula activa para este curso.' } }));
+    }
+
+    // Restaurar cupo disponible si es menor a cupos totales
+    const courses = this.getStoredCourses();
+    const courseIndex = courses.findIndex(c => c.id === cursoId);
+    if (courseIndex !== -1) {
+      courses[courseIndex] = {
+        ...courses[courseIndex],
+        cuposDisponibles: Math.min(courses[courseIndex].cuposTotales, courses[courseIndex].cuposDisponibles + 1)
+      };
+      this.setStoredCourses(courses);
+    }
+
+    this.setStoredEnrollments(enrollments);
+    return of(true).pipe(delay(200));
+  }
 }
+
