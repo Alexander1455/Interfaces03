@@ -18,19 +18,52 @@
     </div>
   </div>
 
-  <!-- Barra de Filtros -->
-  <div class="card mb-4 filter-bar">
-    <div class="search-box">
-      <i class="bi bi-search search-icon"></i>
-      <input
-        type="text"
-        class="form-control search-input"
-        placeholder="Buscar por nombre, correo, rol o código institucional..."
-        [(ngModel)]="searchTerm"
-      />
+  <!-- BARRA DE FILTROS AVANZADA -->
+  <div class="card mb-4 filter-container">
+    <div class="filter-main-row">
+      <!-- Buscador de Texto -->
+      <div class="search-box flex-grow">
+        <i class="bi bi-search search-icon"></i>
+        <input
+          type="text"
+          class="form-control search-input"
+          placeholder="Buscar por nombre, correo, rol o código..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onFilterChange()"
+        />
+      </div>
+
+      <!-- Filtro por Rol -->
+      <div class="filter-select-group">
+        <label class="filter-label"><i class="bi bi-shield-lock"></i> Rol:</label>
+        <select class="form-control filter-select" [(ngModel)]="selectedRol" (ngModelChange)="onFilterChange()">
+          <option value="">Todos los roles</option>
+          <option value="ADMIN">Administrador</option>
+          <option value="PROFESOR">Docente (Maestro)</option>
+          <option value="ESTUDIANTE">Estudiante (Alumno)</option>
+        </select>
+      </div>
+
+      <!-- Filtro por Estado -->
+      <div class="filter-select-group">
+        <label class="filter-label"><i class="bi bi-toggle2-on"></i> Estado:</label>
+        <select class="form-control filter-select" [(ngModel)]="selectedEstado" (ngModelChange)="onFilterChange()">
+          <option value="">Todos los estados</option>
+          <option value="true">Activos</option>
+          <option value="false">Inactivos</option>
+        </select>
+      </div>
+
+      <!-- Botón Limpiar Filtros -->
+      <div class="filter-action-group" *ngIf="searchTerm || selectedRol || selectedEstado">
+        <button class="btn btn-secondary btn-sm" (click)="limpiarFiltros()" title="Restablecer filtros">
+          <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+        </button>
+      </div>
     </div>
-    <div class="filter-stats">
-      <span>Total Registros: <strong>{{ usuarios.length }}</strong></span>
+
+    <div class="filter-summary-row">
+      <span>Mostrando <strong>{{ usuariosFiltrados.length }}</strong> de <strong>{{ usuarios.length }}</strong> usuarios registrados</span>
     </div>
   </div>
 
@@ -46,32 +79,31 @@
       <table class="custom-table">
         <thead>
           <tr>
-            <th>Código</th>
-            <th>Nombre Completo</th>
-            <th>Correo Electrónico</th>
-            <th>Rol Asignado</th>
-            <th>Teléfono</th>
-            <th>Fecha Registro</th>
-            <th>Estado</th>
-            <th class="text-right">Acciones</th>
+            <th class="col-user-code">Código</th>
+            <th class="col-user-name">Nombre Completo</th>
+            <th class="col-user-email">Correo Electrónico</th>
+            <th class="col-user-role">Rol Asignado</th>
+            <th class="col-user-phone">Teléfono</th>
+            <th class="col-user-date">Fecha Registro</th>
+            <th class="col-user-status text-center">Estado</th>
+            <th class="col-user-actions text-right">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <!-- Uso de Pipes personalizados: appFiltroBusqueda, appRol, appEstado -->
-          <tr *ngFor="let u of (usuarios | appFiltroBusqueda:searchTerm:['nombreCompleto', 'email', 'rol', 'codigoInstitucional'])">
-            <td>
+          <tr *ngFor="let u of usuariosPaginados">
+            <td class="col-user-code">
               <strong>{{ u.codigoInstitucional }}</strong>
             </td>
-            <td>
+            <td class="col-user-name">
               <div class="user-cell">
                 <i class="bi bi-person-circle user-avatar-icon"></i>
-                <span>{{ u.nombreCompleto }}</span>
+                <span class="user-name-text">{{ u.nombreCompleto }}</span>
               </div>
             </td>
-            <td>
+            <td class="col-user-email">
               <a [href]="'mailto:' + u.email" class="email-link">{{ u.email }}</a>
             </td>
-            <td>
+            <td class="col-user-role">
               <span class="badge" [ngClass]="{
                 'badge-role-admin': u.rol === 'ADMIN',
                 'badge-role-profesor': u.rol === 'PROFESOR',
@@ -80,31 +112,66 @@
                 {{ u.rol | appRol }}
               </span>
             </td>
-            <td>{{ u.telefono || 'No registrado' }}</td>
-            <td>{{ u.fechaCreacion }}</td>
-            <td>
+            <td class="col-user-phone">{{ u.telefono || 'No registrado' }}</td>
+            <td class="col-user-date">{{ u.fechaCreacion }}</td>
+            <td class="col-user-status text-center">
               <span class="badge" [ngClass]="u.estado | appEstado:'badge'">
                 {{ u.estado | appEstado }}
               </span>
             </td>
-            <td class="text-right actions-cell">
-              <button class="btn btn-secondary btn-sm btn-icon" title="Editar" (click)="abrirModalEditar(u)">
-                <i class="bi bi-pencil-square"></i>
-              </button>
-              <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" (click)="eliminarUsuario(u.id, u.nombreCompleto)">
-                <i class="bi bi-trash3-fill"></i>
-              </button>
+            <td class="col-user-actions text-right">
+              <div class="user-actions-box">
+                <button class="btn btn-secondary btn-sm btn-icon" title="Editar" (click)="abrirModalEditar(u)">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-danger btn-sm btn-icon" title="Eliminar" (click)="eliminarUsuario(u.id, u.nombreCompleto)">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </div>
             </td>
           </tr>
 
-          <tr *ngIf="(usuarios | appFiltroBusqueda:searchTerm:['nombreCompleto', 'email', 'rol', 'codigoInstitucional']).length === 0">
+          <tr *ngIf="usuariosFiltrados.length === 0">
             <td colspan="8" class="text-center empty-row">
               <i class="bi bi-person-x empty-icon"></i>
-              <p>No se encontraron usuarios que coincidan con "{{ searchTerm }}".</p>
+              <p>No se encontraron usuarios que coincidan con los filtros seleccionados.</p>
+              <button class="btn btn-secondary btn-sm mt-2" (click)="limpiarFiltros()" *ngIf="searchTerm || selectedRol || selectedEstado">
+                Limpiar Filtros
+              </button>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Paginación de Usuarios -->
+    <div class="table-pagination-footer" *ngIf="usuariosFiltrados.length > 0">
+      <div class="pagination-left-info">
+        <span>Mostrando <strong>{{ indiceInicio }}</strong> - <strong>{{ indiceFin }}</strong> de <strong>{{ usuariosFiltrados.length }}</strong> usuarios</span>
+        <div class="page-size-selector">
+          <span>Filas por pág:</span>
+          <select class="page-size-select" [(ngModel)]="itemsPorPagina" (ngModelChange)="paginaActual = 1">
+            <option *ngFor="let size of tamaniosPagina" [value]="size">{{ size }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="pagination-nav" *ngIf="totalPaginas > 1">
+        <button class="pagination-btn" (click)="paginaAnterior()" [disabled]="paginaActual === 1" title="Página anterior">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <button
+          *ngFor="let p of paginasArray"
+          class="pagination-btn"
+          [class.active]="p === paginaActual"
+          (click)="cambiarPagina(p)"
+        >
+          {{ p }}
+        </button>
+        <button class="pagination-btn" (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas" title="Página siguiente">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -205,3 +272,4 @@
     </div>
   </div>
 </div>
+

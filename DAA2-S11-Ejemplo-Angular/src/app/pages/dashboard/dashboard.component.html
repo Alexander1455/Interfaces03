@@ -17,25 +17,70 @@
     </div>
   </div>
 
-  <!-- Tarjetas de Métricas (KPIs) -->
-  <div class="metrics-grid">
+  <!-- TARJETAS DE MÉTRICAS (KPIs) DIFERENCIADAS POR ROL -->
+
+  <!-- 1. KPIs PARA ADMINISTRADOR -->
+  <div class="metrics-grid" *appHasRole="['ADMIN']">
     <div class="metric-card">
       <div class="metric-icon bg-blue">
         <i class="bi bi-journal-bookmark-fill"></i>
       </div>
       <div class="metric-info">
-        <span class="metric-label">Cursos Activos</span>
+        <span class="metric-label">Cursos en Catálogo</span>
         <span class="metric-value">{{ totalCursos }}</span>
       </div>
     </div>
 
-    <div class="metric-card" *appHasRole="['ADMIN']">
+    <div class="metric-card">
+      <div class="metric-icon bg-purple">
+        <i class="bi bi-person-video3"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Total Docentes (Maestros)</span>
+        <span class="metric-value">{{ totalDocentes }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon bg-emerald">
+        <i class="bi bi-mortarboard-fill"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Total Alumnos (Estudiantes)</span>
+        <span class="metric-value">{{ totalEstudiantes }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon bg-cyan">
+        <i class="bi bi-shield-lock-fill"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Estado de Seguridad</span>
+        <span class="badge badge-success">JWT Bearer Activo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. KPIs PARA DOCENTE / MAESTRO -->
+  <div class="metrics-grid" *appHasRole="['PROFESOR']">
+    <div class="metric-card">
+      <div class="metric-icon bg-blue">
+        <i class="bi bi-journal-check"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Mis Asignaturas a Cargo</span>
+        <span class="metric-value">{{ misCursosAsignados }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
       <div class="metric-icon bg-purple">
         <i class="bi bi-people-fill"></i>
       </div>
       <div class="metric-info">
-        <span class="metric-label">Usuarios Totales</span>
-        <span class="metric-value">{{ totalUsuarios }}</span>
+        <span class="metric-label">Alumnos Matriculados</span>
+        <span class="metric-value">{{ totalAlumnosEnMisCursos }}</span>
       </div>
     </div>
 
@@ -44,23 +89,66 @@
         <i class="bi bi-award-fill"></i>
       </div>
       <div class="metric-info">
-        <span class="metric-label">Créditos Académicos</span>
-        <span class="metric-value">{{ totalCreditos }}</span>
+        <span class="metric-label">Total Créditos a Cargo</span>
+        <span class="metric-value">{{ totalCreditosDocente }} pts</span>
       </div>
     </div>
 
     <div class="metric-card">
       <div class="metric-icon bg-cyan">
-        <i class="bi bi-key-fill"></i>
+        <i class="bi bi-check-circle-fill"></i>
       </div>
       <div class="metric-info">
-        <span class="metric-label">Estado de Seguridad</span>
-        <span class="badge badge-success">JWT Activo (Bearer)</span>
+        <span class="metric-label">Estado de Cuenta</span>
+        <span class="badge badge-success">Docente Activo</span>
       </div>
     </div>
   </div>
 
-  <!-- Contenido Dinámico según el Rol con *appHasRole -->
+  <!-- 3. KPIs PARA ESTUDIANTE -->
+  <div class="metrics-grid" *appHasRole="['ESTUDIANTE']">
+    <div class="metric-card">
+      <div class="metric-icon bg-purple">
+        <i class="bi bi-backpack-fill"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Cursos Matriculados</span>
+        <span class="metric-value">{{ misCursosMatriculadosCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon bg-emerald">
+        <i class="bi bi-award-fill"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Créditos Matriculados</span>
+        <span class="metric-value">{{ totalCreditosMatriculados }} pts</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon bg-blue">
+        <i class="bi bi-journal-bookmark-fill"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Cursos Disponibles</span>
+        <span class="metric-value">{{ cursosDisponiblesCount }}</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-icon bg-cyan">
+        <i class="bi bi-patch-check-fill"></i>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Estado Académico</span>
+        <span class="badge badge-success">Matrícula Vigente</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECCIONES DE CONTENIDO DINÁMICO POR ROL -->
   
   <!-- 1. Vista Exclusiva del Administrador -->
   <div class="role-section" *appHasRole="['ADMIN']">
@@ -72,25 +160,26 @@
       <div class="action-card">
         <i class="bi bi-person-plus-fill icon-action"></i>
         <h4>Gestión Integral de Usuarios</h4>
-        <p>Crear, actualizar roles, restablecer credenciales y gestionar el estado de alumnos y docentes.</p>
-        <a routerLink="/usuarios" class="btn btn-primary btn-sm">Ir a Usuarios</a>
+        <p>Administrar cuentas de alumnos y docentes, asignar roles y configurar estados de acceso.</p>
+        <a routerLink="/usuarios" class="btn btn-primary btn-sm">Ir a Usuarios ({{ totalUsuarios }})</a>
       </div>
       <div class="action-card">
         <i class="bi bi-folder-plus icon-action"></i>
         <h4>Catálogo y Oferta de Cursos</h4>
         <p>Supervisar programas académicos, cupos disponibles, docentes asignados y horarios.</p>
-        <a routerLink="/cursos" class="btn btn-secondary btn-sm">Gestionar Cursos</a>
+        <a routerLink="/cursos" class="btn btn-secondary btn-sm">Gestionar Cursos ({{ totalCursos }})</a>
       </div>
     </div>
   </div>
 
-  <!-- 2. Vista Exclusiva del Docente -->
+  <!-- 2. Vista Exclusiva del Docente: Solo sus asignaturas a cargo -->
   <div class="role-section" *appHasRole="['PROFESOR']">
     <div class="section-title">
       <i class="bi bi-person-video3"></i>
-      <h3>Mis Asignaturas a Cargo</h3>
+      <h3>Mis Asignaturas a Cargo ({{ misCursos.length }})</h3>
     </div>
-    <div class="table-responsive">
+    
+    <div class="table-responsive" *ngIf="misCursos.length > 0; else noDocenteCourses">
       <table class="custom-table">
         <thead>
           <tr>
@@ -98,17 +187,26 @@
             <th>Curso</th>
             <th>Categoría</th>
             <th>Horario</th>
-            <th>Cupos</th>
+            <th>Créditos</th>
+            <th>Cupos Ocupados</th>
             <th>Estado</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let c of cursos">
+          <tr *ngFor="let c of misCursos">
             <td><strong>{{ c.codigo }}</strong></td>
-            <td>{{ c.nombre }}</td>
+            <td>
+              <div class="font-bold">{{ c.nombre }}</div>
+              <small class="text-secondary">{{ c.descripcion }}</small>
+            </td>
             <td><span class="badge badge-primary">{{ c.categoria }}</span></td>
-            <td>{{ c.horario }}</td>
-            <td>{{ c.cuposDisponibles }}/{{ c.cuposTotales }}</td>
+            <td><i class="bi bi-clock"></i> {{ c.horario }}</td>
+            <td><span class="badge badge-warning">{{ c.creditos }} pts</span></td>
+            <td>
+              <span [class.text-danger]="c.cuposDisponibles <= 5">
+                {{ c.cuposTotales - c.cuposDisponibles }} / {{ c.cuposTotales }} alumnos
+              </span>
+            </td>
             <td>
               <span class="badge" [ngClass]="c.estado | appEstado:'badge'">
                 {{ c.estado | appEstado }}
@@ -118,30 +216,50 @@
         </tbody>
       </table>
     </div>
+
+    <ng-template #noDocenteCourses>
+      <div class="empty-state-card">
+        <i class="bi bi-journal-x empty-icon"></i>
+        <h4>No tienes asignaturas a cargo actualmente</h4>
+        <p>Puedes registrar una nueva asignatura o solicitar su asignación al administrador.</p>
+        <a routerLink="/cursos" class="btn btn-primary btn-sm mt-2">Ir a Catálogo de Cursos</a>
+      </div>
+    </ng-template>
   </div>
 
-  <!-- 3. Vista Exclusiva del Estudiante -->
+  <!-- 3. Vista Exclusiva del Estudiante: Solo sus cursos matriculados -->
   <div class="role-section" *appHasRole="['ESTUDIANTE']">
     <div class="section-title">
       <i class="bi bi-backpack-fill"></i>
-      <h3>Mis Cursos Matriculados</h3>
+      <h3>Mis Cursos Matriculados ({{ misCursos.length }})</h3>
     </div>
-    <div class="student-courses-grid">
-      <div class="student-course-card" *ngFor="let c of cursos">
+
+    <div class="student-courses-grid" *ngIf="misCursos.length > 0; else noStudentCourses">
+      <div class="student-course-card" *ngFor="let c of misCursos">
         <div class="course-card-header">
           <span class="badge badge-purple">{{ c.codigo }}</span>
-          <span class="badge" [ngClass]="c.estado | appEstado:'badge'">
-            {{ c.estado | appEstado }}
-          </span>
+          <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Matriculado</span>
         </div>
         <h4>{{ c.nombre }}</h4>
         <p class="course-card-desc">{{ c.descripcion }}</p>
         <div class="course-meta">
-          <div><i class="bi bi-person"></i> Docente: <strong>{{ c.docenteNombre }}</strong></div>
-          <div><i class="bi bi-clock"></i> Horario: <strong>{{ c.horario }}</strong></div>
-          <div><i class="bi bi-award"></i> Créditos: <strong>{{ c.creditos }}</strong></div>
+          <div><i class="bi bi-person-fill"></i> Docente: <strong>{{ c.docenteNombre }}</strong></div>
+          <div><i class="bi bi-clock-fill"></i> Horario: <strong>{{ c.horario }}</strong></div>
+          <div><i class="bi bi-award-fill"></i> Créditos: <strong>{{ c.creditos }} puntos</strong></div>
         </div>
       </div>
     </div>
+
+    <ng-template #noStudentCourses>
+      <div class="empty-state-card">
+        <i class="bi bi-backpack empty-icon"></i>
+        <h4>Aún no te has matriculado en ningún curso</h4>
+        <p>Explora el catálogo de cursos disponibles e inscríbete para iniciar tu ciclo académico.</p>
+        <a routerLink="/cursos" class="btn btn-primary btn-sm mt-2">
+          <i class="bi bi-plus-circle"></i> Ver Cursos Disponibles y Matricularme
+        </a>
+      </div>
+    </ng-template>
   </div>
 </div>
+
