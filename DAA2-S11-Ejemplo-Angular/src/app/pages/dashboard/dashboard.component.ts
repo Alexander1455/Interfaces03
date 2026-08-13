@@ -15,12 +15,25 @@ import { UsuarioSesion } from '../../core/models/auth.model';
 export class DashboardComponent implements OnInit {
   usuarioActual: UsuarioSesion | null = null;
   cursos: Curso[] = [];
+  misCursos: Curso[] = [];
   usuarios: Usuario[] = [];
   isLoading = true;
 
+  // KPIs Administrador
   totalCursos = 0;
+  totalDocentes = 0;
+  totalEstudiantes = 0;
   totalUsuarios = 0;
-  totalCreditos = 0;
+
+  // KPIs Docente
+  misCursosAsignados = 0;
+  totalAlumnosEnMisCursos = 0;
+  totalCreditosDocente = 0;
+
+  // KPIs Estudiante
+  misCursosMatriculadosCount = 0;
+  totalCreditosMatriculados = 0;
+  cursosDisponiblesCount = 0;
 
   constructor(
     public authService: AuthService,
@@ -35,23 +48,56 @@ export class DashboardComponent implements OnInit {
 
   cargarDatos(): void {
     this.isLoading = true;
-    this.cursoService.getCursos().subscribe({
-      next: (data) => {
-        this.cursos = data;
-        this.totalCursos = data.filter(c => c.estado).length;
-        this.totalCreditos = data.reduce((acc, curr) => acc + curr.creditos, 0);
-        this.isLoading = false;
-      },
-      error: () => { this.isLoading = false; }
-    });
 
     if (this.authService.isAdmin()) {
-      this.usuarioService.getUsuarios().subscribe({
+      this.cursoService.getCursos().subscribe({
         next: (data) => {
-          this.usuarios = data;
-          this.totalUsuarios = data.length;
+          this.cursos = data;
+          this.totalCursos = data.length;
+          this.isLoading = false;
+        },
+        error: () => { this.isLoading = false; }
+      });
+
+      this.usuarioService.getUsuarios().subscribe({
+        next: (users) => {
+          this.usuarios = users;
+          this.totalUsuarios = users.length;
+          this.totalDocentes = users.filter(u => u.rol === 'PROFESOR').length;
+          this.totalEstudiantes = users.filter(u => u.rol === 'ESTUDIANTE').length;
+        }
+      });
+    } else if (this.authService.isProfesor()) {
+      this.cursoService.getCursos().subscribe({
+        next: (data) => {
+          this.cursos = data;
+          const currentId = this.usuarioActual?.id;
+          this.misCursos = data.filter(c => c.docenteId === currentId);
+          this.misCursosAsignados = this.misCursos.length;
+          this.totalCreditosDocente = this.misCursos.reduce((acc, curr) => acc + curr.creditos, 0);
+          this.totalAlumnosEnMisCursos = this.misCursos.reduce((acc, curr) => acc + Math.max(0, curr.cuposTotales - curr.cuposDisponibles), 0);
+          this.isLoading = false;
+        },
+        error: () => { this.isLoading = false; }
+      });
+    } else if (this.authService.isEstudiante() && this.usuarioActual) {
+      this.cursoService.getCursosMatriculados(this.usuarioActual.id).subscribe({
+        next: (matriculados) => {
+          this.misCursos = matriculados;
+          this.misCursosMatriculadosCount = matriculados.length;
+          this.totalCreditosMatriculados = matriculados.reduce((acc, curr) => acc + curr.creditos, 0);
+          this.isLoading = false;
+        },
+        error: () => { this.isLoading = false; }
+      });
+
+      this.cursoService.getCursos().subscribe({
+        next: (allCourses) => {
+          this.cursos = allCourses;
+          this.cursosDisponiblesCount = allCourses.filter(c => c.estado).length;
         }
       });
     }
   }
 }
+

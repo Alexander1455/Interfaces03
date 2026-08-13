@@ -14,9 +14,18 @@ import { UserRole } from '../../core/models/auth.model';
 export class UsuariosComponent implements OnInit {
   usuarios: Usuario[] = [];
   isLoading = true;
-  searchTerm = '';
 
-  // Modal State
+  // Filtros
+  searchTerm = '';
+  selectedRol = '';
+  selectedEstado = '';
+
+  // Paginación
+  paginaActual = 1;
+  itemsPorPagina = 5;
+  tamaniosPagina = [5, 10, 15, 20];
+
+  // Estado Modal
   isModalOpen = false;
   isEditing = false;
   selectedUserId: number | null = null;
@@ -62,6 +71,85 @@ export class UsuariosComponent implements OnInit {
         this.isLoading = false;
       }
     });
+  }
+
+  get usuariosFiltrados(): Usuario[] {
+    return this.usuarios.filter(u => {
+      // 1. Filtro por texto
+      if (this.searchTerm.trim()) {
+        const term = this.searchTerm.toLowerCase().trim();
+        const matchesText =
+          u.nombreCompleto.toLowerCase().includes(term) ||
+          u.email.toLowerCase().includes(term) ||
+          u.codigoInstitucional.toLowerCase().includes(term) ||
+          (u.telefono && u.telefono.toLowerCase().includes(term));
+        if (!matchesText) return false;
+      }
+
+      // 2. Filtro por Rol
+      if (this.selectedRol && u.rol !== this.selectedRol) {
+        return false;
+      }
+
+      // 3. Filtro por Estado
+      if (this.selectedEstado !== '') {
+        const estadoBool = this.selectedEstado === 'true';
+        if (u.estado !== estadoBool) return false;
+      }
+
+      return true;
+    });
+  }
+
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.usuariosFiltrados.length / this.itemsPorPagina));
+  }
+
+  get usuariosPaginados(): Usuario[] {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    return this.usuariosFiltrados.slice(inicio, inicio + this.itemsPorPagina);
+  }
+
+  get indiceInicio(): number {
+    if (this.usuariosFiltrados.length === 0) return 0;
+    return (this.paginaActual - 1) * this.itemsPorPagina + 1;
+  }
+
+  get indiceFin(): number {
+    return Math.min(this.paginaActual * this.itemsPorPagina, this.usuariosFiltrados.length);
+  }
+
+  get paginasArray(): number[] {
+    return Array.from({ length: this.totalPaginas }, (_, i) => i + 1);
+  }
+
+  cambiarPagina(pagina: number): void {
+    if (pagina >= 1 && pagina <= this.totalPaginas) {
+      this.paginaActual = pagina;
+    }
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+    }
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+    }
+  }
+
+  onFilterChange(): void {
+    this.paginaActual = 1;
+  }
+
+  limpiarFiltros(): void {
+    this.searchTerm = '';
+    this.selectedRol = '';
+    this.selectedEstado = '';
+    this.paginaActual = 1;
   }
 
   abrirModalCrear(): void {
@@ -163,3 +251,4 @@ export class UsuariosComponent implements OnInit {
     }, 3500);
   }
 }
+
