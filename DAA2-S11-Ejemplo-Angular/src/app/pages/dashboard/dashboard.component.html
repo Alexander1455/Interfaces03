@@ -186,7 +186,7 @@
             <th>Código</th>
             <th>Curso</th>
             <th>Categoría</th>
-            <th>Horario</th>
+            <th>Fechas y Horario</th>
             <th>Créditos</th>
             <th>Cupos Ocupados</th>
             <th>Estado</th>
@@ -200,7 +200,10 @@
               <small class="text-secondary">{{ c.descripcion }}</small>
             </td>
             <td><span class="badge badge-primary">{{ c.categoria }}</span></td>
-            <td><i class="bi bi-clock"></i> {{ c.horario }}</td>
+            <td>
+              <div><small class="text-primary font-bold"><i class="bi bi-calendar3"></i> {{ c.fechaInicio }}</small></div>
+              <small class="text-secondary"><i class="bi bi-clock"></i> {{ c.horario }}</small>
+            </td>
             <td><span class="badge badge-warning">{{ c.creditos }} pts</span></td>
             <td>
               <span [class.text-danger]="c.cuposDisponibles <= 5">
@@ -221,7 +224,7 @@
       <div class="empty-state-card">
         <i class="bi bi-journal-x empty-icon"></i>
         <h4>No tienes asignaturas a cargo actualmente</h4>
-        <p>Puedes registrar una nueva asignatura o solicitar su asignación al administrador.</p>
+        <p>Puedes solicitar la asignación de nuevas asignaturas a la administración académica.</p>
         <a routerLink="/cursos" class="btn btn-primary btn-sm mt-2">Ir a Catálogo de Cursos</a>
       </div>
     </ng-template>
@@ -244,6 +247,7 @@
         <p class="course-card-desc">{{ c.descripcion }}</p>
         <div class="course-meta">
           <div><i class="bi bi-person-fill"></i> Docente: <strong>{{ c.docenteNombre }}</strong></div>
+          <div><i class="bi bi-calendar3"></i> Inicio: <strong>{{ c.fechaInicio }}</strong></div>
           <div><i class="bi bi-clock-fill"></i> Horario: <strong>{{ c.horario }}</strong></div>
           <div><i class="bi bi-award-fill"></i> Créditos: <strong>{{ c.creditos }} puntos</strong></div>
         </div>

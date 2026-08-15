@@ -29,6 +29,10 @@ export class CursosComponent implements OnInit {
   isModalOpen = false;
   isEditing = false;
   selectedCursoId: number | null = null;
+
+  // Estado Modal de Aviso para Docentes
+  isAvisoPermisoModalOpen = false;
+  cursoAvisoDocente: Curso | null = null;
   
   cursoForm!: FormGroup;
   toastMessage = '';
@@ -46,6 +50,49 @@ export class CursosComponent implements OnInit {
     'Ciberseguridad',
     'Inteligencia Artificial',
     'Móviles & Multiplataforma'
+  ];
+
+  fechasInicioDisponibles = [
+    '17 de Marzo de 2025 (Ciclo 2025-I)',
+    '01 de Abril de 2025 (Ciclo 2025-I)',
+    '15 de Abril de 2025 (Inicio Quincenal)',
+    '05 de Mayo de 2025 (Ciclo Modular)',
+    '02 de Junio de 2025 (Ciclo Intensivo)',
+    '18 de Agosto de 2025 (Ciclo 2025-II)',
+    '01 de Septiembre de 2025 (Ciclo 2025-II)',
+    '15 de Septiembre de 2025 (Inicio Quincenal)',
+    '06 de Octubre de 2025 (Ciclo Modular II)',
+    '03 de Noviembre de 2025 (Ciclo Intensivo II)',
+    '05 de Enero de 2026 (Ciclo Verano 2026)',
+    '19 de Enero de 2026 (Ciclo Verano Intensivo)'
+  ];
+
+  fechasFinDisponibles = [
+    '18 de Julio de 2025 (Fin Semestre)',
+    '01 de Agosto de 2025 (Fin Evaluaciones)',
+    '19 de Diciembre de 2025 (Fin Semestre)',
+    '30 de Diciembre de 2025 (Fin Evaluaciones)',
+    '27 de Febrero de 2026 (Fin Ciclo Verano)',
+    '13 de Marzo de 2026 (Fin Verano Intensivo)'
+  ];
+
+  horariosDisponibles = [
+    'Lun - Mie 08:00 - 10:30 (Mañana)',
+    'Lun - Mie 10:45 - 13:15 (Mañana)',
+    'Lun - Mie 14:00 - 16:30 (Tarde)',
+    'Lun - Mie 16:45 - 19:15 (Tarde)',
+    'Lun - Mie 19:00 - 21:30 (Noche)',
+    'Lun - Mie 19:30 - 22:00 (Noche)',
+    'Mar - Jue 08:00 - 10:30 (Mañana)',
+    'Mar - Jue 10:45 - 13:15 (Mañana)',
+    'Mar - Jue 14:00 - 16:30 (Tarde)',
+    'Mar - Jue 18:30 - 21:00 (Noche)',
+    'Mar - Jue 19:00 - 21:30 (Noche)',
+    'Vie 14:00 - 18:00 (Tarde Intensivo)',
+    'Vie 19:00 - 22:00 (Noche Intensivo)',
+    'Sab 08:00 - 13:00 (Sábados Mañana)',
+    'Sab 14:00 - 19:00 (Sábados Tarde)',
+    'Dom 08:30 - 13:30 (Domingos Mañana)'
   ];
 
   constructor(
@@ -73,7 +120,9 @@ export class CursosComponent implements OnInit {
       creditos: [4, [Validators.required, Validators.min(1), Validators.max(10)]],
       docenteId: [defaultDocenteId, Validators.required],
       cuposTotales: [30, [Validators.required, Validators.min(5), Validators.max(100)]],
-      horario: ['', Validators.required],
+      horario: [this.horariosDisponibles[4], Validators.required],
+      fechaInicio: [this.fechasInicioDisponibles[0], Validators.required],
+      fechaFin: [this.fechasFinDisponibles[0], Validators.required],
       estado: [true, Validators.required]
     });
   }
@@ -199,12 +248,15 @@ export class CursosComponent implements OnInit {
   }
 
   abrirModalCrear(): void {
+    if (!this.authService.isAdmin()) {
+      this.mostrarToast('Acción denegada: Solo los administradores tienen permiso para registrar nuevos cursos.', 'warning');
+      return;
+    }
+
     this.isEditing = false;
     this.selectedCursoId = null;
 
-    const currentDocenteId = this.authService.isProfesor()
-      ? this.authService.usuarioActual?.id
-      : (this.docentes.length > 0 ? this.docentes[0].id : '');
+    const currentDocenteId = this.docentes.length > 0 ? this.docentes[0].id : '';
 
     this.cursoForm.reset({
       codigo: '',
@@ -214,13 +266,28 @@ export class CursosComponent implements OnInit {
       creditos: 4,
       docenteId: currentDocenteId,
       cuposTotales: 30,
-      horario: 'Lun - Mie 19:00 - 21:30',
+      horario: this.horariosDisponibles[4],
+      fechaInicio: this.fechasInicioDisponibles[0],
+      fechaFin: this.fechasFinDisponibles[0],
       estado: true
     });
     this.isModalOpen = true;
   }
 
   abrirModalEditar(curso: Curso): void {
+    // Si el usuario autenticado es un docente (PROFESOR), mostrar aviso modal formal de solicitud de permiso
+    if (this.authService.isProfesor()) {
+      this.cursoAvisoDocente = curso;
+      this.isAvisoPermisoModalOpen = true;
+      this.mostrarToast('Aviso: Debe solicitar autorización a la administración para modificar cursos.', 'warning');
+      return;
+    }
+
+    if (!this.authService.isAdmin()) {
+      this.mostrarToast('Acción denegada: Solo los administradores pueden modificar cursos.', 'warning');
+      return;
+    }
+
     this.isEditing = true;
     this.selectedCursoId = curso.id;
     this.cursoForm.patchValue({
@@ -231,10 +298,17 @@ export class CursosComponent implements OnInit {
       creditos: curso.creditos,
       docenteId: curso.docenteId,
       cuposTotales: curso.cuposTotales,
-      horario: curso.horario,
+      horario: curso.horario || this.horariosDisponibles[0],
+      fechaInicio: curso.fechaInicio || this.fechasInicioDisponibles[0],
+      fechaFin: curso.fechaFin || this.fechasFinDisponibles[0],
       estado: curso.estado
     });
     this.isModalOpen = true;
+  }
+
+  cerrarAvisoPermiso(): void {
+    this.isAvisoPermisoModalOpen = false;
+    this.cursoAvisoDocente = null;
   }
 
   cerrarModal(): void {
@@ -243,17 +317,17 @@ export class CursosComponent implements OnInit {
   }
 
   guardarCurso(): void {
+    if (!this.authService.isAdmin()) {
+      this.mostrarToast('Acción no permitida: Debe solicitar permiso a la administración para guardar cambios.', 'danger');
+      return;
+    }
+
     if (this.cursoForm.invalid) {
       this.cursoForm.markAllAsTouched();
       return;
     }
 
     const formValues = this.cursoForm.value;
-
-    // Si es docente, asegurar que se registre a sí mismo
-    if (this.authService.isProfesor() && this.authService.usuarioActual) {
-      formValues.docenteId = this.authService.usuarioActual.id;
-    }
 
     if (this.isEditing && this.selectedCursoId) {
       const updateDto: CursoUpdateDto = {
@@ -263,7 +337,7 @@ export class CursosComponent implements OnInit {
 
       this.cursoService.actualizarCurso(updateDto).subscribe({
         next: () => {
-          this.mostrarToast('Curso actualizado exitosamente', 'success');
+          this.mostrarToast('Curso actualizado exitosamente por la administración', 'success');
           this.cerrarModal();
           this.cargarDatos();
         },

@@ -10,8 +10,8 @@
       </p>
     </div>
 
-    <!-- Botón visible para ADMIN y PROFESOR -->
-    <div *appHasRole="['ADMIN', 'PROFESOR']">
+    <!-- Botón visible ÚNICAMENTE para Administrador -->
+    <div *appHasRole="['ADMIN']">
       <button class="btn btn-primary" (click)="abrirModalCrear()">
         <i class="bi bi-plus-circle-fill"></i> Registrar Nuevo Curso
       </button>
@@ -103,7 +103,7 @@
             <th class="col-teacher">Docente</th>
             <th class="col-credits text-center">Créditos</th>
             <th class="col-seats text-center">Cupos</th>
-            <th class="col-schedule">Horario</th>
+            <th class="col-schedule">Fechas y Horario</th>
             <th class="col-status text-center">Estado</th>
             <th class="col-actions text-right">Acciones</th>
           </tr>
@@ -135,7 +135,12 @@
               </span>
             </td>
             <td class="col-schedule">
-              <small class="text-secondary schedule-text"><i class="bi bi-clock"></i> {{ c.horario }}</small>
+              <div class="schedule-date-box">
+                <div class="date-chip" [title]="'Ciclo: ' + c.fechaInicio + ' hasta ' + c.fechaFin">
+                  <i class="bi bi-calendar3"></i> {{ c.fechaInicio }}
+                </div>
+                <small class="text-secondary schedule-text"><i class="bi bi-clock"></i> {{ c.horario }}</small>
+              </div>
             </td>
             <td class="col-status text-center">
               <span class="badge" [ngClass]="c.estado | appEstado:'badge'">
@@ -147,10 +152,10 @@
               <div class="admin-actions-box" *appHasRole="['ADMIN', 'PROFESOR']">
                 <button
                   class="btn btn-secondary btn-sm btn-icon"
-                  title="Editar Curso"
+                  [title]="authService.isProfesor() ? 'Solicitar modificación a Administración' : 'Editar Curso'"
                   (click)="abrirModalEditar(c)"
                 >
-                  <i class="bi bi-pencil-square"></i>
+                  <i class="bi" [ngClass]="authService.isProfesor() ? 'bi-lock-fill text-warning' : 'bi-pencil-square'"></i>
                 </button>
 
                 <button
@@ -247,14 +252,14 @@
     </div>
   </div>
 
-  <!-- MODAL REACTIVO PARA CREACIÓN Y EDICIÓN -->
+  <!-- MODAL REACTIVO PARA CREACIÓN Y EDICIÓN (ADMINISTRADOR) -->
   <div class="modal-overlay" *ngIf="isModalOpen">
-    <div class="modal-content">
+    <div class="modal-content modal-lg-custom">
       <div class="modal-header">
         <h3 class="modal-title">
           <i class="bi bi-journal-plus" *ngIf="!isEditing"></i>
           <i class="bi bi-pencil-square" *ngIf="isEditing"></i>
-          {{ isEditing ? 'Actualizar Curso' : 'Registrar Nuevo Curso' }}
+          {{ isEditing ? 'Actualizar Curso (Administración)' : 'Registrar Nuevo Curso' }}
         </h3>
         <button class="btn-close" (click)="cerrarModal()">&times;</button>
       </div>
@@ -318,14 +323,8 @@
           <div class="form-row">
             <div class="form-group col-6">
               <label class="form-label" for="docenteId">Docente Titular *</label>
-              <!-- Si es docente, mostrar su nombre asignado -->
-              <div *ngIf="authService.isProfesor()" class="teacher-locked-badge">
-                <i class="bi bi-person-check-fill"></i>
-                <span>{{ authService.usuarioActual?.nombre }} (Asignado)</span>
-              </div>
-
-              <!-- Si es administrador, select dropdown -->
-              <select id="docenteId" class="form-control" formControlName="docenteId" *ngIf="authService.isAdmin()">
+              <!-- Select dropdown de docentes -->
+              <select id="docenteId" class="form-control" formControlName="docenteId">
                 <option *ngFor="let doc of docentes" [value]="doc.id">{{ doc.nombreCompleto }}</option>
               </select>
             </div>
@@ -343,6 +342,28 @@
             </div>
           </div>
 
+          <!-- SELECTORES DESPLEGABLES PARA FECHAS ACADÉMICAS -->
+          <div class="form-row">
+            <div class="form-group col-6">
+              <label class="form-label" for="fechaInicio">
+                <i class="bi bi-calendar-check text-primary"></i> Fecha de Inicio (Ciclo) *
+              </label>
+              <select id="fechaInicio" class="form-control" formControlName="fechaInicio">
+                <option *ngFor="let f of fechasInicioDisponibles" [value]="f">{{ f }}</option>
+              </select>
+            </div>
+
+            <div class="form-group col-6">
+              <label class="form-label" for="fechaFin">
+                <i class="bi bi-calendar-event text-primary"></i> Fecha de Fin / Culminación *
+              </label>
+              <select id="fechaFin" class="form-control" formControlName="fechaFin">
+                <option *ngFor="let f of fechasFinDisponibles" [value]="f">{{ f }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- SELECTOR DESPLEGABLE PARA HORARIOS Y CUPOS -->
           <div class="form-row">
             <div class="form-group col-6">
               <label class="form-label" for="cuposTotales">Cupos Totales *</label>
@@ -357,14 +378,12 @@
             </div>
 
             <div class="form-group col-6">
-              <label class="form-label" for="horario">Horario *</label>
-              <input
-                id="horario"
-                type="text"
-                class="form-control"
-                placeholder="Ej. Lun - Mie 19:00 - 21:30"
-                formControlName="horario"
-              />
+              <label class="form-label" for="horario">
+                <i class="bi bi-clock text-primary"></i> Horario de Clases *
+              </label>
+              <select id="horario" class="form-control" formControlName="horario">
+                <option *ngFor="let h of horariosDisponibles" [value]="h">{{ h }}</option>
+              </select>
             </div>
           </div>
 
@@ -386,5 +405,48 @@
       </form>
     </div>
   </div>
+
+  <!-- MODAL DE AVISO DE PERMISOS PARA DOCENTES -->
+  <div class="modal-overlay" *ngIf="isAvisoPermisoModalOpen">
+    <div class="modal-content modal-warning-permission">
+      <div class="modal-header header-warning-permission">
+        <h3 class="modal-title text-warning-title">
+          <i class="bi bi-shield-exclamation"></i> Aviso de Permiso Requerido
+        </h3>
+        <button class="btn-close" (click)="cerrarAvisoPermiso()">&times;</button>
+      </div>
+
+      <div class="modal-body text-center permission-modal-body">
+        <div class="permission-icon-circle">
+          <i class="bi bi-lock-fill"></i>
+        </div>
+
+        <h4 class="permission-headline">Modificación Restringida para Docentes</h4>
+        
+        <p class="text-secondary permission-text">
+          Estimado(a) docente, no cuenta con permisos para modificar asignaturas o alterar horarios y cupos académicos.
+        </p>
+
+        <div class="course-requested-badge" *ngIf="cursoAvisoDocente">
+          <span class="badge badge-purple">{{ cursoAvisoDocente.codigo }}</span>
+          <strong class="course-badge-name">{{ cursoAvisoDocente.nombre }}</strong>
+        </div>
+
+        <div class="alert-permission-box">
+          <i class="bi bi-info-circle-fill alert-box-icon"></i>
+          <div>
+            Si requiere realizar algún cambio o ajuste en este curso, <strong>debe solicitar permiso y autorización formal a la Administración Académica</strong>.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-center footer-permission">
+        <button type="button" class="btn btn-primary" (click)="cerrarAvisoPermiso()">
+          <i class="bi bi-check2-circle"></i> Entendido, Solicitaré Permiso a Administración
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
 

@@ -86,7 +86,9 @@ export class MockBackendService {
       cuposDisponibles: 18,
       cuposTotales: 30,
       estado: true,
-      horario: 'Lun - Mie 19:00 - 21:30'
+      horario: 'Lun - Mie 19:00 - 21:30',
+      fechaInicio: '17 de Marzo de 2025 (Ciclo 2025-I)',
+      fechaFin: '18 de Julio de 2025 (Fin Semestre)'
     },
     {
       id: 2,
@@ -100,7 +102,9 @@ export class MockBackendService {
       cuposDisponibles: 12,
       cuposTotales: 25,
       estado: true,
-      horario: 'Mar - Jue 18:30 - 21:00'
+      horario: 'Mar - Jue 18:30 - 21:00',
+      fechaInicio: '01 de Abril de 2025 (Ciclo 2025-I)',
+      fechaFin: '01 de Agosto de 2025 (Fin Semestre)'
     },
     {
       id: 3,
@@ -114,7 +118,9 @@ export class MockBackendService {
       cuposDisponibles: 22,
       cuposTotales: 35,
       estado: true,
-      horario: 'Sab 08:00 - 13:00'
+      horario: 'Sab 08:00 - 13:00',
+      fechaInicio: '05 de Mayo de 2025 (Ciclo Modular)',
+      fechaFin: '19 de Diciembre de 2025 (Fin Semestre)'
     },
     {
       id: 4,
@@ -128,7 +134,9 @@ export class MockBackendService {
       cuposDisponibles: 5,
       cuposTotales: 20,
       estado: true,
-      horario: 'Vie 19:00 - 22:00'
+      horario: 'Vie 19:00 - 22:00',
+      fechaInicio: '18 de Agosto de 2025 (Ciclo 2025-II)',
+      fechaFin: '19 de Diciembre de 2025 (Fin Semestre)'
     }
   ];
 
@@ -155,7 +163,21 @@ export class MockBackendService {
   private getStoredCourses(): Curso[] {
     if (!this.isBrowser()) return [...this.defaultCourses];
     const data = localStorage.getItem(this.COURSES_KEY);
-    return data ? JSON.parse(data) : [...this.defaultCourses];
+    if (!data) return [...this.defaultCourses];
+    try {
+      const parsed: Curso[] = JSON.parse(data);
+      // Garantizar que cursos preexistentes tengan fechaInicio y fechaFin
+      return parsed.map((c, index) => {
+        const fallback = this.defaultCourses[index % this.defaultCourses.length];
+        return {
+          ...c,
+          fechaInicio: c.fechaInicio || fallback?.fechaInicio || '17 de Marzo de 2025 (Ciclo 2025-I)',
+          fechaFin: c.fechaFin || fallback?.fechaFin || '18 de Julio de 2025 (Fin Semestre)'
+        };
+      });
+    } catch {
+      return [...this.defaultCourses];
+    }
   }
 
   private setStoredCourses(courses: Curso[]): void {
@@ -360,7 +382,9 @@ export class MockBackendService {
       cuposDisponibles: Number(dto.cuposTotales),
       cuposTotales: Number(dto.cuposTotales),
       estado: dto.estado ?? true,
-      horario: dto.horario
+      horario: dto.horario,
+      fechaInicio: dto.fechaInicio || '17 de Marzo de 2025 (Ciclo 2025-I)',
+      fechaFin: dto.fechaFin || '18 de Julio de 2025 (Fin Semestre)'
     };
 
     courses.push(nuevoCurso);
@@ -390,7 +414,9 @@ export class MockBackendService {
       docenteNombre: docente ? docente.nombreCompleto : courses[index].docenteNombre,
       cuposTotales: Number(dto.cuposTotales),
       estado: dto.estado,
-      horario: dto.horario
+      horario: dto.horario,
+      fechaInicio: dto.fechaInicio || courses[index].fechaInicio,
+      fechaFin: dto.fechaFin || courses[index].fechaFin
     };
 
     this.setStoredCourses(courses);

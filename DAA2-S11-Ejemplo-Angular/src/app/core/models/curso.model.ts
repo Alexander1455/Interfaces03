@@ -11,6 +11,8 @@ export interface Curso {
   cuposTotales: number;
   estado: boolean; // true = Activo, false = Inactivo
   horario: string;
+  fechaInicio: string;
+  fechaFin: string;
 }
 
 export interface CursoCreateDto {
@@ -23,6 +25,8 @@ export interface CursoCreateDto {
   cuposTotales: number;
   estado: boolean;
   horario: string;
+  fechaInicio: string;
+  fechaFin: string;
 }
 
 export interface CursoUpdateDto extends CursoCreateDto {
