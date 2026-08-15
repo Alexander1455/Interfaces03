@@ -190,6 +190,7 @@
             <th>Créditos</th>
             <th>Cupos Ocupados</th>
             <th>Estado</th>
+            <th class="text-right">Calificaciones</th>
           </tr>
         </thead>
         <tbody>
@@ -215,6 +216,15 @@
                 {{ c.estado | appEstado }}
               </span>
             </td>
+            <td class="text-right">
+              <button
+                class="btn btn-primary btn-sm btn-action-notas"
+                title="Gestionar y Asignar Calificaciones"
+                (click)="abrirModalNotas(c)"
+              >
+                <i class="bi bi-card-checklist"></i> Asignar Notas
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -230,27 +240,72 @@
     </ng-template>
   </div>
 
-  <!-- 3. Vista Exclusiva del Estudiante: Solo sus cursos matriculados -->
+  <!-- 3. Vista Exclusiva del Estudiante: Solo sus cursos matriculados y sus calificaciones -->
   <div class="role-section" *appHasRole="['ESTUDIANTE']">
     <div class="section-title">
       <i class="bi bi-backpack-fill"></i>
-      <h3>Mis Cursos Matriculados ({{ misCursos.length }})</h3>
+      <h3>Mis Cursos Matriculados y Calificaciones ({{ misCursos.length }})</h3>
     </div>
 
     <div class="student-courses-grid" *ngIf="misCursos.length > 0; else noStudentCourses">
       <div class="student-course-card" *ngFor="let c of misCursos">
         <div class="course-card-header">
           <span class="badge badge-purple">{{ c.codigo }}</span>
-          <span class="badge badge-success"><i class="bi bi-check-circle-fill"></i> Matriculado</span>
+          <span
+            class="badge"
+            [ngClass]="{
+              'badge-success': getMatriculaDeCurso(c.id)?.estadoAcademico === 'APROBADO',
+              'badge-danger': getMatriculaDeCurso(c.id)?.estadoAcademico === 'DESAPROBADO',
+              'badge-primary': getMatriculaDeCurso(c.id)?.estadoAcademico === 'EN_CURSO' || !getMatriculaDeCurso(c.id)?.estadoAcademico
+            }"
+          >
+            {{ getMatriculaDeCurso(c.id)?.estadoAcademico || 'EN CURSO' }}
+          </span>
         </div>
-        <h4>{{ c.nombre }}</h4>
+
+        <h4 class="mt-2">{{ c.nombre }}</h4>
         <p class="course-card-desc">{{ c.descripcion }}</p>
-        <div class="course-meta">
-          <div><i class="bi bi-person-fill"></i> Docente: <strong>{{ c.docenteNombre }}</strong></div>
-          <div><i class="bi bi-calendar3"></i> Inicio: <strong>{{ c.fechaInicio }}</strong></div>
-          <div><i class="bi bi-clock-fill"></i> Horario: <strong>{{ c.horario }}</strong></div>
-          <div><i class="bi bi-award-fill"></i> Créditos: <strong>{{ c.creditos }} puntos</strong></div>
+
+        <!-- Resumen de Notas en Tarjeta -->
+        <div class="student-grades-mini-box" *ngIf="getMatriculaDeCurso(c.id) as mat">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-1 border-bottom">
+            <span class="text-secondary small font-bold"><i class="bi bi-bar-chart-fill"></i> Evaluaciones:</span>
+            <div class="promedio-mini-badge" [ngClass]="{
+              'text-success': isAprobado(mat.promedioFinal),
+              'text-danger': isDesaprobado(mat.promedioFinal)
+            }">
+              Prom: <strong>{{ mat.promedioFinal !== null && mat.promedioFinal !== undefined ? mat.promedioFinal : '--' }}</strong>
+            </div>
+          </div>
+
+          <div class="mini-grades-row">
+            <div class="mini-grade-pill">
+              <small>EC1</small>
+              <strong>{{ mat.notaEC1 !== null && mat.notaEC1 !== undefined ? mat.notaEC1 : '-' }}</strong>
+            </div>
+            <div class="mini-grade-pill">
+              <small>EC2</small>
+              <strong>{{ mat.notaEC2 !== null && mat.notaEC2 !== undefined ? mat.notaEC2 : '-' }}</strong>
+            </div>
+            <div class="mini-grade-pill">
+              <small>EC3</small>
+              <strong>{{ mat.notaEC3 !== null && mat.notaEC3 !== undefined ? mat.notaEC3 : '-' }}</strong>
+            </div>
+            <div class="mini-grade-pill">
+              <small>EF</small>
+              <strong>{{ mat.notaEF !== null && mat.notaEF !== undefined ? mat.notaEF : '-' }}</strong>
+            </div>
+          </div>
         </div>
+
+        <div class="course-meta mt-2">
+          <div><i class="bi bi-person-fill"></i> Docente: <strong>{{ c.docenteNombre }}</strong></div>
+          <div><i class="bi bi-clock-fill"></i> Horario: <strong>{{ c.horario }}</strong></div>
+        </div>
+
+        <button class="btn btn-outline-primary btn-sm w-100 mt-3" (click)="verMisNotas(c)">
+          <i class="bi bi-award-fill"></i> Ver Boleta Oficial
+        </button>
       </div>
     </div>
 
@@ -264,6 +319,311 @@
         </a>
       </div>
     </ng-template>
+  </div>
+
+  <!-- MODAL DE ASIGNACIÓN DE CALIFICACIONES (DOCENTE) -->
+  <div class="modal-overlay" *ngIf="isModalNotasOpen">
+    <div class="modal-content modal-xl-custom">
+      <div class="modal-header header-grades">
+        <div>
+          <h3 class="modal-title">
+            <i class="bi bi-card-checklist text-primary"></i> Registro y Gestión de Calificaciones
+          </h3>
+          <p class="modal-subtitle-course" *ngIf="cursoNotasSeleccionado">
+            <span class="badge badge-purple">{{ cursoNotasSeleccionado.codigo }}</span>
+            <strong>{{ cursoNotasSeleccionado.nombre }}</strong> &bull;
+            <span class="text-secondary"><i class="bi bi-clock"></i> {{ cursoNotasSeleccionado.horario }}</span>
+          </p>
+        </div>
+        <button class="btn-close" (click)="cerrarModalNotas()">&times;</button>
+      </div>
+
+      <div class="modal-body p-0">
+        <!-- Indicador de Ponderación Académica -->
+        <div class="grades-weights-bar">
+          <div class="weight-item">
+            <span class="weight-label">EC1</span>
+            <span class="weight-percent">20%</span>
+          </div>
+          <div class="weight-sep">+</div>
+          <div class="weight-item">
+            <span class="weight-label">EC2</span>
+            <span class="weight-percent">20%</span>
+          </div>
+          <div class="weight-sep">+</div>
+          <div class="weight-item">
+            <span class="weight-label">EC3</span>
+            <span class="weight-percent">20%</span>
+          </div>
+          <div class="weight-sep">+</div>
+          <div class="weight-item">
+            <span class="weight-label">Examen Final (EF)</span>
+            <span class="weight-percent">40%</span>
+          </div>
+          <div class="weight-sep">=</div>
+          <div class="weight-item highlight">
+            <span class="weight-label">Promedio Final</span>
+            <span class="weight-percent">Min. Aprobatorio: 12.5 (13)</span>
+          </div>
+        </div>
+
+        <div class="p-3" *ngIf="isLoadingNotas">
+          <div class="text-center py-4">
+            <i class="bi bi-arrow-repeat spin-icon"></i>
+            <p class="text-secondary mt-2">Cargando nómina de estudiantes inscritos...</p>
+          </div>
+        </div>
+
+        <div class="table-responsive table-grades-wrap" *ngIf="!isLoadingNotas">
+          <table class="custom-table table-grades">
+            <thead>
+              <tr>
+                <th style="min-width: 220px;">Estudiante</th>
+                <th class="text-center" style="width: 85px;">EC1 (20%)</th>
+                <th class="text-center" style="width: 85px;">EC2 (20%)</th>
+                <th class="text-center" style="width: 85px;">EC3 (20%)</th>
+                <th class="text-center" style="width: 85px;">EF (40%)</th>
+                <th class="text-center" style="width: 100px;">Promedio</th>
+                <th class="text-center" style="width: 110px;">Estado</th>
+                <th style="min-width: 200px;">Observación / Feedback</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of matriculasCurso">
+                <td>
+                  <div class="student-cell-info">
+                    <div>
+                      <strong class="student-name-text">{{ m.estudianteNombre }}</strong>
+                      <div class="student-code-muted"><i class="bi bi-person-badge"></i> {{ m.estudianteCodigo }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEC1"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEC2"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEC3"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEF"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <span
+                    class="final-grade-badge"
+                    [ngClass]="{
+                      'grade-pass': isAprobado(m.promedioFinal),
+                      'grade-fail': isDesaprobado(m.promedioFinal),
+                      'grade-pending': m.promedioFinal === null || m.promedioFinal === undefined
+                    }"
+                  >
+                    {{ m.promedioFinal !== null && m.promedioFinal !== undefined ? m.promedioFinal : '--' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span
+                    class="badge"
+                    [ngClass]="{
+                      'badge-success': m.estadoAcademico === 'APROBADO',
+                      'badge-danger': m.estadoAcademico === 'DESAPROBADO',
+                      'badge-primary': m.estadoAcademico === 'EN_CURSO' || !m.estadoAcademico
+                    }"
+                  >
+                    <i class="bi" [ngClass]="{
+                      'bi-check-circle-fill': m.estadoAcademico === 'APROBADO',
+                      'bi-x-circle-fill': m.estadoAcademico === 'DESAPROBADO',
+                      'bi-hourglass-split': m.estadoAcademico === 'EN_CURSO' || !m.estadoAcademico
+                    }"></i>
+                    {{ m.estadoAcademico || 'EN_CURSO' }}
+                  </span>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    placeholder="Comentario o retroalimentación..."
+                    [(ngModel)]="m.observaciones"
+                  />
+                </td>
+              </tr>
+
+              <tr *ngIf="matriculasCurso.length === 0 && !isLoadingNotas">
+                <td colspan="8" class="text-center py-4 text-muted">
+                  <i class="bi bi-people empty-icon"></i>
+                  <p>Aún no hay estudiantes matriculados en esta asignatura.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+        <div class="text-secondary small">
+          <i class="bi bi-people-fill"></i> Total Alumnos Matriculados: <strong>{{ matriculasCurso.length }}</strong>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalNotas()">Cancelar</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="guardarCalificaciones()"
+            [disabled]="isSavingNotas || matriculasCurso.length === 0"
+          >
+            <i class="bi bi-floppy-fill" *ngIf="!isSavingNotas"></i>
+            <i class="bi bi-arrow-repeat spin-icon" *ngIf="isSavingNotas"></i>
+            {{ isSavingNotas ? 'Guardando Notas...' : 'Guardar Calificaciones' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE BOLETA DE NOTAS (ESTUDIANTE) -->
+  <div class="modal-overlay" *ngIf="isModalBoletaOpen">
+    <div class="modal-content modal-boleta-custom">
+      <div class="modal-header header-boleta">
+        <div class="d-flex align-items-center gap-2">
+          <div class="boleta-icon-badge">
+            <i class="bi bi-award-fill"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Boleta de Calificaciones</h3>
+            <span class="text-secondary small">Registro Académico Oficial</span>
+          </div>
+        </div>
+        <button class="btn-close" (click)="cerrarModalBoleta()">&times;</button>
+      </div>
+
+      <div class="modal-body p-4" *ngIf="boletaEstudiante">
+        <!-- Encabezado de la Asignatura -->
+        <div class="boleta-course-card">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <span class="badge badge-purple">{{ boletaEstudiante.cursoCodigo }}</span>
+              <h4 class="mt-1 font-bold">{{ boletaEstudiante.cursoNombre }}</h4>
+            </div>
+            <div class="text-right">
+              <span
+                class="badge badge-lg"
+                [ngClass]="{
+                  'badge-success': boletaEstudiante.estadoAcademico === 'APROBADO',
+                  'badge-danger': boletaEstudiante.estadoAcademico === 'DESAPROBADO',
+                  'badge-primary': boletaEstudiante.estadoAcademico === 'EN_CURSO' || !boletaEstudiante.estadoAcademico
+                }"
+              >
+                {{ boletaEstudiante.estadoAcademico || 'EN_CURSO' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas de Evaluaciones -->
+        <div class="grades-grid-boleta mt-3">
+          <div class="grade-card-boleta">
+            <span class="grade-type">EC1 (20%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEC1)">
+              {{ boletaEstudiante.notaEC1 !== null && boletaEstudiante.notaEC1 !== undefined ? boletaEstudiante.notaEC1 : '--' }}
+            </span>
+            <small class="grade-sub">Continua 1</small>
+          </div>
+
+          <div class="grade-card-boleta">
+            <span class="grade-type">EC2 (20%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEC2)">
+              {{ boletaEstudiante.notaEC2 !== null && boletaEstudiante.notaEC2 !== undefined ? boletaEstudiante.notaEC2 : '--' }}
+            </span>
+            <small class="grade-sub">Continua 2</small>
+          </div>
+
+          <div class="grade-card-boleta">
+            <span class="grade-type">EC3 (20%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEC3)">
+              {{ boletaEstudiante.notaEC3 !== null && boletaEstudiante.notaEC3 !== undefined ? boletaEstudiante.notaEC3 : '--' }}
+            </span>
+            <small class="grade-sub">Continua 3</small>
+          </div>
+
+          <div class="grade-card-boleta">
+            <span class="grade-type">EF (40%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEF)">
+              {{ boletaEstudiante.notaEF !== null && boletaEstudiante.notaEF !== undefined ? boletaEstudiante.notaEF : '--' }}
+            </span>
+            <small class="grade-sub">Examen Final</small>
+          </div>
+        </div>
+
+        <!-- Promedio Ponderado Final -->
+        <div class="promedio-banner-boleta mt-3">
+          <div>
+            <span class="promedio-title">PROMEDIO FINAL PONDERADO</span>
+            <p class="promedio-formula">Fórmula: (EC1 &times; 0.2) + (EC2 &times; 0.2) + (EC3 &times; 0.2) + (EF &times; 0.4)</p>
+          </div>
+          <div
+            class="promedio-value-big"
+            [ngClass]="{
+              'text-success': isAprobado(boletaEstudiante.promedioFinal),
+              'text-danger': isDesaprobado(boletaEstudiante.promedioFinal)
+            }"
+          >
+            {{ boletaEstudiante.promedioFinal !== null && boletaEstudiante.promedioFinal !== undefined ? boletaEstudiante.promedioFinal : '--' }}
+          </div>
+        </div>
+
+        <!-- Observaciones del Docente -->
+        <div class="boleta-feedback-box mt-3" *ngIf="boletaEstudiante.observaciones">
+          <i class="bi bi-chat-quote-fill"></i>
+          <div>
+            <strong>Retroalimentación del Docente:</strong>
+            <p class="mt-1 mb-0">{{ boletaEstudiante.observaciones }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-primary" (click)="cerrarModalBoleta()">
+          <i class="bi bi-check2"></i> Cerrar Boleta
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 

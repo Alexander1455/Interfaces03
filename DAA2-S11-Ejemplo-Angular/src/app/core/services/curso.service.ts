@@ -70,6 +70,24 @@ export class CursoService {
     );
   }
 
+  public getMatriculasPorCurso(cursoId: number): Observable<Matricula[]> {
+    return this.mockBackend.getMatriculasPorCurso(cursoId).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  public guardarNotasCurso(cursoId: number, notasList: any[]): Observable<Matricula[]> {
+    return this.mockBackend.guardarNotasCurso(cursoId, notasList).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  public actualizarNotas(matriculaId: number, dto: any): Observable<Matricula> {
+    return this.mockBackend.actualizarNotas(matriculaId, dto).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   private handleError(error: HttpErrorResponse | any) {
     let errorMessage = 'Ocurrió un error al procesar los cursos.';
     if (error.error && error.error.message) {

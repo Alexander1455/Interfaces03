@@ -220,3 +220,330 @@
   color: var(--text-primary);
 }
 
+/* ==========================================================================
+   ESTILOS DE CALIFICACIONES EN DASHBOARD
+   ========================================================================== */
+.btn-action-notas {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.btn-action-notas:hover {
+  background-color: #0369a1;
+  border-color: #0369a1;
+  color: #ffffff;
+}
+
+.student-grades-mini-box {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.promedio-mini-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.mini-grades-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+
+.mini-grade-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mini-grade-pill small {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.mini-grade-pill strong {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-top: 0.1rem;
+}
+
+/* Modal Grades */
+.modal-xl-custom {
+  max-width: 1050px;
+  width: 95%;
+}
+
+.header-grades {
+  background-color: #f8fafc;
+  border-bottom: 1px solid var(--border-color);
+  padding: 1.25rem 1.75rem;
+}
+
+.modal-subtitle-course {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.grades-weights-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid #bae6fd;
+}
+
+.weight-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.weight-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0369a1;
+  text-transform: uppercase;
+}
+
+.weight-percent {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.weight-sep {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.weight-item.highlight .weight-label {
+  color: #15803d;
+}
+
+.weight-item.highlight .weight-percent {
+  color: #166534;
+  font-size: 0.75rem;
+}
+
+.table-grades-wrap {
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.table-grades thead th {
+  position: sticky;
+  top: 0;
+  background-color: #f8fafc;
+  z-index: 2;
+  font-size: 0.8rem;
+}
+
+.student-cell-info {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.student-name-text {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  display: block;
+}
+
+.student-code-muted {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.grade-input {
+  width: 65px;
+  height: 34px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  margin: 0 auto;
+  border: 1.5px solid #cbd5e1;
+}
+
+.grade-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.final-grade-badge {
+  display: inline-block;
+  min-width: 48px;
+  padding: 0.25rem 0.5rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.grade-pass {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.grade-fail {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.grade-pending {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+/* Boleta Modal */
+.modal-boleta-custom {
+  max-width: 600px;
+  width: 92%;
+}
+
+.header-boleta {
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-bottom: 1px solid #bfdbfe;
+  padding: 1.25rem 1.5rem;
+}
+
+.boleta-icon-badge {
+  width: 44px;
+  height: 44px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+}
+
+.boleta-course-card {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+}
+
+.grades-grid-boleta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+}
+
+.grade-card-boleta {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.5rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.grade-card-boleta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+}
+
+.grade-type {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.grade-score {
+  display: block;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0.25rem 0;
+}
+
+.grade-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+.promedio-banner-boleta {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  padding: 1.15rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.promedio-title {
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #94a3b8;
+  display: block;
+}
+
+.promedio-formula {
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  margin: 0.25rem 0 0 0;
+}
+
+.promedio-value-big {
+  font-size: 2.25rem;
+  font-weight: 900;
+  min-width: 80px;
+  text-align: right;
+}
+
+.boleta-feedback-box {
+  background-color: #f8fafc;
+  border-left: 4px solid #3b82f6;
+  padding: 0.85rem 1rem;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.boleta-feedback-box i {
+  color: #3b82f6;
+  font-size: 1.2rem;
+  margin-top: 0.1rem;
+}
+

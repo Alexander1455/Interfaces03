@@ -3,7 +3,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CursoService } from '../../core/services/curso.service';
 import { UsuarioService } from '../../core/services/usuario.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Curso, CursoCreateDto, CursoUpdateDto } from '../../core/models/curso.model';
+import { Curso, CursoCreateDto, CursoUpdateDto, Matricula, ActualizarNotaItemDto } from '../../core/models/curso.model';
 import { Usuario } from '../../core/models/usuario.model';
 
 @Component({
@@ -23,9 +23,8 @@ export class CursosComponent implements OnInit {
   selectedCategoria = '';
   selectedEstado = '';
   selectedDocente = '';
-  soloMisCursos = false;
   
-  // Estado Modal
+  // Estado Modal Curso
   isModalOpen = false;
   isEditing = false;
   selectedCursoId: number | null = null;
@@ -33,6 +32,18 @@ export class CursosComponent implements OnInit {
   // Estado Modal de Aviso para Docentes
   isAvisoPermisoModalOpen = false;
   cursoAvisoDocente: Curso | null = null;
+
+  // Estado Modal Gestión de Calificaciones (Docente)
+  isModalNotasOpen = false;
+  cursoNotasSeleccionado: Curso | null = null;
+  matriculasCurso: Matricula[] = [];
+  isLoadingNotas = false;
+  isSavingNotas = false;
+
+  // Estado Modal Boleta de Notas (Estudiante)
+  isModalBoletaOpen = false;
+  boletaEstudiante: Matricula | null = null;
+  cursoBoleta: Curso | null = null;
   
   cursoForm!: FormGroup;
   toastMessage = '';
@@ -53,27 +64,27 @@ export class CursosComponent implements OnInit {
   ];
 
   fechasInicioDisponibles = [
-    '17 de Marzo de 2025 (Ciclo 2025-I)',
-    '01 de Abril de 2025 (Ciclo 2025-I)',
-    '15 de Abril de 2025 (Inicio Quincenal)',
-    '05 de Mayo de 2025 (Ciclo Modular)',
-    '02 de Junio de 2025 (Ciclo Intensivo)',
-    '18 de Agosto de 2025 (Ciclo 2025-II)',
-    '01 de Septiembre de 2025 (Ciclo 2025-II)',
-    '15 de Septiembre de 2025 (Inicio Quincenal)',
-    '06 de Octubre de 2025 (Ciclo Modular II)',
-    '03 de Noviembre de 2025 (Ciclo Intensivo II)',
-    '05 de Enero de 2026 (Ciclo Verano 2026)',
-    '19 de Enero de 2026 (Ciclo Verano Intensivo)'
+    '16 de Marzo de 2026 (Ciclo 2026-I)',
+    '01 de Abril de 2026 (Ciclo 2026-I)',
+    '15 de Abril de 2026 (Inicio Quincenal)',
+    '04 de Mayo de 2026 (Ciclo Modular)',
+    '01 de Junio de 2026 (Ciclo Intensivo)',
+    '17 de Agosto de 2026 (Ciclo 2026-II)',
+    '01 de Septiembre de 2026 (Ciclo 2026-II)',
+    '14 de Septiembre de 2026 (Inicio Quincenal)',
+    '05 de Octubre de 2026 (Ciclo Modular II)',
+    '02 de Noviembre de 2026 (Ciclo Intensivo II)',
+    '04 de Enero de 2027 (Ciclo Verano 2027)',
+    '18 de Enero de 2027 (Ciclo Verano Intensivo)'
   ];
 
   fechasFinDisponibles = [
-    '18 de Julio de 2025 (Fin Semestre)',
-    '01 de Agosto de 2025 (Fin Evaluaciones)',
-    '19 de Diciembre de 2025 (Fin Semestre)',
-    '30 de Diciembre de 2025 (Fin Evaluaciones)',
-    '27 de Febrero de 2026 (Fin Ciclo Verano)',
-    '13 de Marzo de 2026 (Fin Verano Intensivo)'
+    '17 de Julio de 2026 (Fin Semestre)',
+    '31 de Julio de 2026 (Fin Evaluaciones)',
+    '18 de Diciembre de 2026 (Fin Semestre)',
+    '29 de Diciembre de 2026 (Fin Evaluaciones)',
+    '26 de Febrero de 2027 (Fin Ciclo Verano)',
+    '12 de Marzo de 2027 (Fin Verano Intensivo)'
   ];
 
   horariosDisponibles = [
@@ -185,8 +196,8 @@ export class CursosComponent implements OnInit {
         if (c.docenteId !== Number(this.selectedDocente)) return false;
       }
 
-      // 5. Filtro rápido "Solo mis asignaturas" para maestros
-      if (this.soloMisCursos && this.authService.isProfesor()) {
+      // 5. Restricción estricta para maestros: El maestro SOLO puede ver los cursos que tiene a cargo
+      if (this.authService.isProfesor()) {
         if (c.docenteId !== this.authService.usuarioActual?.id) return false;
       }
 
@@ -243,7 +254,6 @@ export class CursosComponent implements OnInit {
     this.selectedCategoria = '';
     this.selectedEstado = '';
     this.selectedDocente = '';
-    this.soloMisCursos = false;
     this.paginaActual = 1;
   }
 
@@ -409,6 +419,121 @@ export class CursosComponent implements OnInit {
         }
       });
     }
+  }
+
+  // --- MÉTODOS DE CALIFICACIONES (DOCENTE) ---
+  abrirModalNotas(curso: Curso): void {
+    this.cursoNotasSeleccionado = curso;
+    this.isLoadingNotas = true;
+    this.isModalNotasOpen = true;
+
+    this.cursoService.getMatriculasPorCurso(curso.id).subscribe({
+      next: (matriculas) => {
+        this.matriculasCurso = matriculas.map(m => ({ ...m }));
+        this.isLoadingNotas = false;
+      },
+      error: () => {
+        this.mostrarToast('Error al cargar la nómina de estudiantes', 'danger');
+        this.isLoadingNotas = false;
+      }
+    });
+  }
+
+  cerrarModalNotas(): void {
+    this.isModalNotasOpen = false;
+    this.cursoNotasSeleccionado = null;
+    this.matriculasCurso = [];
+  }
+
+  recalcularNotaFila(m: Matricula): void {
+    const clamp = (val: any) => {
+      if (val === '' || val === null || val === undefined) return null;
+      const num = Number(val);
+      if (isNaN(num)) return null;
+      return Math.max(0, Math.min(20, num));
+    };
+
+    m.notaEC1 = clamp(m.notaEC1);
+    m.notaEC2 = clamp(m.notaEC2);
+    m.notaEC3 = clamp(m.notaEC3);
+    m.notaEF = clamp(m.notaEF);
+
+    if (m.notaEC1 != null && m.notaEC2 != null && m.notaEC3 != null && m.notaEF != null) {
+      const prom = Number(((Number(m.notaEC1) * 0.2) + (Number(m.notaEC2) * 0.2) + (Number(m.notaEC3) * 0.2) + (Number(m.notaEF) * 0.4)).toFixed(1));
+      m.promedioFinal = prom;
+      m.estadoAcademico = prom >= 12.5 ? 'APROBADO' : 'DESAPROBADO';
+    } else {
+      const validNotas = [m.notaEC1, m.notaEC2, m.notaEC3, m.notaEF].filter(n => n != null) as number[];
+      if (validNotas.length > 0) {
+        m.promedioFinal = Number((validNotas.reduce((a, b) => a + Number(b), 0) / validNotas.length).toFixed(1));
+        m.estadoAcademico = 'EN_CURSO';
+      } else {
+        m.promedioFinal = null;
+        m.estadoAcademico = 'EN_CURSO';
+      }
+    }
+  }
+
+  guardarCalificaciones(): void {
+    if (!this.cursoNotasSeleccionado) return;
+
+    this.isSavingNotas = true;
+    const dtos: ActualizarNotaItemDto[] = this.matriculasCurso.map(m => ({
+      matriculaId: m.id,
+      notaEC1: m.notaEC1,
+      notaEC2: m.notaEC2,
+      notaEC3: m.notaEC3,
+      notaEF: m.notaEF,
+      observaciones: m.observaciones || ''
+    }));
+
+    this.cursoService.guardarNotasCurso(this.cursoNotasSeleccionado.id, dtos).subscribe({
+      next: (updated) => {
+        this.matriculasCurso = updated;
+        this.isSavingNotas = false;
+        this.mostrarToast(`¡Calificaciones guardadas exitosamente para ${this.cursoNotasSeleccionado?.nombre}!`, 'success');
+        this.cerrarModalNotas();
+        this.cargarDatos();
+      },
+      error: () => {
+        this.mostrarToast('Error al guardar las calificaciones del curso', 'danger');
+        this.isSavingNotas = false;
+      }
+    });
+  }
+
+  // --- MÉTODOS DE BOLETA DE NOTAS (ESTUDIANTE) ---
+  verMisNotas(curso: Curso): void {
+    if (!this.authService.usuarioActual) return;
+    this.cursoBoleta = curso;
+    this.cursoService.getMatriculas(this.authService.usuarioActual.id).subscribe({
+      next: (matriculas) => {
+        const mat = matriculas.find(m => m.cursoId === curso.id);
+        if (mat) {
+          this.boletaEstudiante = mat;
+          this.isModalBoletaOpen = true;
+        } else {
+          this.mostrarToast('No se encontró el registro de notas para este curso', 'warning');
+        }
+      },
+      error: () => {
+        this.mostrarToast('Error al consultar las calificaciones', 'danger');
+      }
+    });
+  }
+
+  cerrarModalBoleta(): void {
+    this.isModalBoletaOpen = false;
+    this.boletaEstudiante = null;
+    this.cursoBoleta = null;
+  }
+
+  isAprobado(nota: number | null | undefined): boolean {
+    return nota !== null && nota !== undefined && Number(nota) >= 12.5;
+  }
+
+  isDesaprobado(nota: number | null | undefined): boolean {
+    return nota !== null && nota !== undefined && Number(nota) < 12.5;
   }
 
   mostrarToast(msg: string, type: 'success' | 'danger' | 'warning' = 'success'): void {

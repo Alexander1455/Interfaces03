@@ -61,19 +61,8 @@
         </select>
       </div>
 
-      <!-- Botón Rápido "Solo mis cursos" para Docentes -->
-      <div class="filter-select-group" *appHasRole="['PROFESOR']">
-        <button
-          class="btn btn-sm"
-          [ngClass]="soloMisCursos ? 'btn-primary' : 'btn-secondary'"
-          (click)="soloMisCursos = !soloMisCursos; onFilterChange()"
-        >
-          <i class="bi" [ngClass]="soloMisCursos ? 'bi-check-square-fill' : 'bi-square'"></i> Solo Mis Asignaturas
-        </button>
-      </div>
-
       <!-- Botón Limpiar Filtros -->
-      <div class="filter-action-group" *ngIf="searchTerm || selectedCategoria || selectedEstado || selectedDocente || soloMisCursos">
+      <div class="filter-action-group" *ngIf="searchTerm || selectedCategoria || selectedEstado || selectedDocente">
         <button class="btn btn-secondary btn-sm" (click)="limpiarFiltros()" title="Restablecer todos los filtros">
           <i class="bi bi-arrow-counterclockwise"></i> Limpiar
         </button>
@@ -81,7 +70,8 @@
     </div>
 
     <div class="filter-summary-row">
-      <span>Mostrando <strong>{{ cursosFiltrados.length }}</strong> de <strong>{{ cursos.length }}</strong> cursos</span>
+      <span *ngIf="authService.isProfesor()">Mostrando <strong>{{ cursosFiltrados.length }}</strong> asignaturas asignadas a tu cargo académico</span>
+      <span *ngIf="!authService.isProfesor()">Mostrando <strong>{{ cursosFiltrados.length }}</strong> de <strong>{{ cursos.length }}</strong> cursos</span>
     </div>
   </div>
 
@@ -148,33 +138,56 @@
               </span>
             </td>
             <td class="col-actions text-right">
-              <!-- Acciones para Administrador y Profesor -->
-              <div class="admin-actions-box" *appHasRole="['ADMIN', 'PROFESOR']">
+              <!-- Acciones para Administrador -->
+              <div class="admin-actions-box" *appHasRole="['ADMIN']">
                 <button
                   class="btn btn-secondary btn-sm btn-icon"
-                  [title]="authService.isProfesor() ? 'Solicitar modificación a Administración' : 'Editar Curso'"
+                  title="Editar Curso"
                   (click)="abrirModalEditar(c)"
                 >
-                  <i class="bi" [ngClass]="authService.isProfesor() ? 'bi-lock-fill text-warning' : 'bi-pencil-square'"></i>
+                  <i class="bi bi-pencil-square"></i>
                 </button>
 
                 <button
                   class="btn btn-danger btn-sm btn-icon"
                   title="Eliminar Curso"
                   (click)="eliminarCurso(c.id, c.nombre)"
-                  *appHasRole="['ADMIN']"
                 >
                   <i class="bi bi-trash3-fill"></i>
                 </button>
               </div>
 
-              <!-- Acciones de Matrícula para Estudiante -->
+              <!-- Acciones para Profesor: Asignar Notas y Aviso Modificar -->
+              <div class="admin-actions-box" *appHasRole="['PROFESOR']">
+                <button
+                  class="btn btn-primary btn-sm btn-action-notas"
+                  title="Asignar y Gestionar Calificaciones de Estudiantes"
+                  (click)="abrirModalNotas(c)"
+                >
+                  <i class="bi bi-card-checklist"></i> Asignar Notas
+                </button>
+
+                <button
+                  class="btn btn-secondary btn-sm btn-icon"
+                  title="Solicitar Modificación a Administración"
+                  (click)="abrirModalEditar(c)"
+                >
+                  <i class="bi bi-lock-fill text-warning"></i>
+                </button>
+              </div>
+
+              <!-- Acciones de Matrícula y Boleta para Estudiante -->
               <div class="student-actions-box" *appHasRole="['ESTUDIANTE']">
                 <!-- Ya matriculado -->
                 <div class="enrolled-actions-box" *ngIf="estaMatriculado(c.id)">
-                  <span class="badge badge-success">
-                    <i class="bi bi-check-circle-fill"></i> Matriculado
-                  </span>
+                  <button
+                    class="btn btn-primary btn-xs"
+                    title="Ver Mis Calificaciones en este curso"
+                    (click)="verMisNotas(c)"
+                  >
+                    <i class="bi bi-award-fill"></i> Ver Boleta
+                  </button>
+
                   <button
                     class="btn btn-outline-danger btn-xs"
                     title="Retirarme del curso"
@@ -211,8 +224,9 @@
           <tr *ngIf="cursosFiltrados.length === 0">
             <td colspan="9" class="text-center empty-row">
               <i class="bi bi-folder-x empty-icon"></i>
-              <p>No se encontraron cursos que coincidan con los filtros seleccionados.</p>
-              <button class="btn btn-secondary btn-sm mt-2" (click)="limpiarFiltros()" *ngIf="searchTerm || selectedCategoria || selectedEstado || selectedDocente || soloMisCursos">
+              <p *ngIf="authService.isProfesor()">No tienes asignaturas a tu cargo registradas actualmente.</p>
+              <p *ngIf="!authService.isProfesor()">No se encontraron cursos que coincidan con los filtros seleccionados.</p>
+              <button class="btn btn-secondary btn-sm mt-2" (click)="limpiarFiltros()" *ngIf="searchTerm || selectedCategoria || selectedEstado || selectedDocente">
                 Limpiar Filtros
               </button>
             </td>
@@ -443,6 +457,311 @@
       <div class="modal-footer justify-content-center footer-permission">
         <button type="button" class="btn btn-primary" (click)="cerrarAvisoPermiso()">
           <i class="bi bi-check2-circle"></i> Entendido, Solicitaré Permiso a Administración
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ASIGNACIÓN DE CALIFICACIONES (DOCENTE) -->
+  <div class="modal-overlay" *ngIf="isModalNotasOpen">
+    <div class="modal-content modal-xl-custom">
+      <div class="modal-header header-grades">
+        <div>
+          <h3 class="modal-title">
+            <i class="bi bi-card-checklist text-primary"></i> Registro y Gestión de Calificaciones
+          </h3>
+          <p class="modal-subtitle-course" *ngIf="cursoNotasSeleccionado">
+            <span class="badge badge-purple">{{ cursoNotasSeleccionado.codigo }}</span>
+            <strong>{{ cursoNotasSeleccionado.nombre }}</strong> &bull;
+            <span class="text-secondary"><i class="bi bi-clock"></i> {{ cursoNotasSeleccionado.horario }}</span>
+          </p>
+        </div>
+        <button class="btn-close" (click)="cerrarModalNotas()">&times;</button>
+      </div>
+
+      <div class="modal-body p-0">
+        <!-- Indicador de Ponderación Académica -->
+        <div class="grades-weights-bar">
+          <div class="weight-item">
+            <span class="weight-label">EC1</span>
+            <span class="weight-percent">20%</span>
+          </div>
+          <div class="weight-sep">+</div>
+          <div class="weight-item">
+            <span class="weight-label">EC2</span>
+            <span class="weight-percent">20%</span>
+          </div>
+          <div class="weight-sep">+</div>
+          <div class="weight-item">
+            <span class="weight-label">EC3</span>
+            <span class="weight-percent">20%</span>
+          </div>
+          <div class="weight-sep">+</div>
+          <div class="weight-item">
+            <span class="weight-label">Examen Final (EF)</span>
+            <span class="weight-percent">40%</span>
+          </div>
+          <div class="weight-sep">=</div>
+          <div class="weight-item highlight">
+            <span class="weight-label">Promedio Final</span>
+            <span class="weight-percent">Min. Aprobatorio: 12.5 (13)</span>
+          </div>
+        </div>
+
+        <div class="p-3" *ngIf="isLoadingNotas">
+          <div class="text-center py-4">
+            <i class="bi bi-arrow-repeat spin-icon"></i>
+            <p class="text-secondary mt-2">Cargando nómina de estudiantes inscritos...</p>
+          </div>
+        </div>
+
+        <div class="table-responsive table-grades-wrap" *ngIf="!isLoadingNotas">
+          <table class="custom-table table-grades">
+            <thead>
+              <tr>
+                <th style="min-width: 220px;">Estudiante</th>
+                <th class="text-center" style="width: 85px;">EC1 (20%)</th>
+                <th class="text-center" style="width: 85px;">EC2 (20%)</th>
+                <th class="text-center" style="width: 85px;">EC3 (20%)</th>
+                <th class="text-center" style="width: 85px;">EF (40%)</th>
+                <th class="text-center" style="width: 100px;">Promedio</th>
+                <th class="text-center" style="width: 110px;">Estado</th>
+                <th style="min-width: 200px;">Observación / Feedback</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of matriculasCurso">
+                <td>
+                  <div class="student-cell-info">
+                    <div>
+                      <strong class="student-name-text">{{ m.estudianteNombre }}</strong>
+                      <div class="student-code-muted"><i class="bi bi-person-badge"></i> {{ m.estudianteCodigo }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEC1"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEC2"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEC3"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    class="form-control grade-input"
+                    [(ngModel)]="m.notaEF"
+                    (ngModelChange)="recalcularNotaFila(m)"
+                    placeholder="--"
+                  />
+                </td>
+                <td class="text-center">
+                  <span
+                    class="final-grade-badge"
+                    [ngClass]="{
+                      'grade-pass': isAprobado(m.promedioFinal),
+                      'grade-fail': isDesaprobado(m.promedioFinal),
+                      'grade-pending': m.promedioFinal === null || m.promedioFinal === undefined
+                    }"
+                  >
+                    {{ m.promedioFinal !== null && m.promedioFinal !== undefined ? m.promedioFinal : '--' }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <span
+                    class="badge"
+                    [ngClass]="{
+                      'badge-success': m.estadoAcademico === 'APROBADO',
+                      'badge-danger': m.estadoAcademico === 'DESAPROBADO',
+                      'badge-primary': m.estadoAcademico === 'EN_CURSO' || !m.estadoAcademico
+                    }"
+                  >
+                    <i class="bi" [ngClass]="{
+                      'bi-check-circle-fill': m.estadoAcademico === 'APROBADO',
+                      'bi-x-circle-fill': m.estadoAcademico === 'DESAPROBADO',
+                      'bi-hourglass-split': m.estadoAcademico === 'EN_CURSO' || !m.estadoAcademico
+                    }"></i>
+                    {{ m.estadoAcademico || 'EN_CURSO' }}
+                  </span>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    placeholder="Comentario o retroalimentación..."
+                    [(ngModel)]="m.observaciones"
+                  />
+                </td>
+              </tr>
+
+              <tr *ngIf="matriculasCurso.length === 0 && !isLoadingNotas">
+                <td colspan="8" class="text-center py-4 text-muted">
+                  <i class="bi bi-people empty-icon"></i>
+                  <p>Aún no hay estudiantes matriculados en esta asignatura.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-between">
+        <div class="text-secondary small">
+          <i class="bi bi-people-fill"></i> Total Alumnos Matriculados: <strong>{{ matriculasCurso.length }}</strong>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" (click)="cerrarModalNotas()">Cancelar</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            (click)="guardarCalificaciones()"
+            [disabled]="isSavingNotas || matriculasCurso.length === 0"
+          >
+            <i class="bi bi-floppy-fill" *ngIf="!isSavingNotas"></i>
+            <i class="bi bi-arrow-repeat spin-icon" *ngIf="isSavingNotas"></i>
+            {{ isSavingNotas ? 'Guardando Notas...' : 'Guardar Calificaciones' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE BOLETA DE NOTAS (ESTUDIANTE) -->
+  <div class="modal-overlay" *ngIf="isModalBoletaOpen">
+    <div class="modal-content modal-boleta-custom">
+      <div class="modal-header header-boleta">
+        <div class="d-flex align-items-center gap-2">
+          <div class="boleta-icon-badge">
+            <i class="bi bi-award-fill"></i>
+          </div>
+          <div>
+            <h3 class="modal-title">Boleta de Calificaciones</h3>
+            <span class="text-secondary small">Registro Académico Oficial</span>
+          </div>
+        </div>
+        <button class="btn-close" (click)="cerrarModalBoleta()">&times;</button>
+      </div>
+
+      <div class="modal-body p-4" *ngIf="boletaEstudiante">
+        <!-- Encabezado de la Asignatura -->
+        <div class="boleta-course-card">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <span class="badge badge-purple">{{ boletaEstudiante.cursoCodigo }}</span>
+              <h4 class="mt-1 font-bold">{{ boletaEstudiante.cursoNombre }}</h4>
+            </div>
+            <div class="text-right">
+              <span
+                class="badge badge-lg"
+                [ngClass]="{
+                  'badge-success': boletaEstudiante.estadoAcademico === 'APROBADO',
+                  'badge-danger': boletaEstudiante.estadoAcademico === 'DESAPROBADO',
+                  'badge-primary': boletaEstudiante.estadoAcademico === 'EN_CURSO' || !boletaEstudiante.estadoAcademico
+                }"
+              >
+                {{ boletaEstudiante.estadoAcademico || 'EN_CURSO' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas de Evaluaciones -->
+        <div class="grades-grid-boleta mt-3">
+          <div class="grade-card-boleta">
+            <span class="grade-type">EC1 (20%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEC1)">
+              {{ boletaEstudiante.notaEC1 !== null && boletaEstudiante.notaEC1 !== undefined ? boletaEstudiante.notaEC1 : '--' }}
+            </span>
+            <small class="grade-sub">Continua 1</small>
+          </div>
+
+          <div class="grade-card-boleta">
+            <span class="grade-type">EC2 (20%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEC2)">
+              {{ boletaEstudiante.notaEC2 !== null && boletaEstudiante.notaEC2 !== undefined ? boletaEstudiante.notaEC2 : '--' }}
+            </span>
+            <small class="grade-sub">Continua 2</small>
+          </div>
+
+          <div class="grade-card-boleta">
+            <span class="grade-type">EC3 (20%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEC3)">
+              {{ boletaEstudiante.notaEC3 !== null && boletaEstudiante.notaEC3 !== undefined ? boletaEstudiante.notaEC3 : '--' }}
+            </span>
+            <small class="grade-sub">Continua 3</small>
+          </div>
+
+          <div class="grade-card-boleta">
+            <span class="grade-type">EF (40%)</span>
+            <span class="grade-score" [class.text-danger]="isDesaprobado(boletaEstudiante.notaEF)">
+              {{ boletaEstudiante.notaEF !== null && boletaEstudiante.notaEF !== undefined ? boletaEstudiante.notaEF : '--' }}
+            </span>
+            <small class="grade-sub">Examen Final</small>
+          </div>
+        </div>
+
+        <!-- Promedio Ponderado Final -->
+        <div class="promedio-banner-boleta mt-3">
+          <div>
+            <span class="promedio-title">PROMEDIO FINAL PONDERADO</span>
+            <p class="promedio-formula">Fórmula: (EC1 &times; 0.2) + (EC2 &times; 0.2) + (EC3 &times; 0.2) + (EF &times; 0.4)</p>
+          </div>
+          <div
+            class="promedio-value-big"
+            [ngClass]="{
+              'text-success': isAprobado(boletaEstudiante.promedioFinal),
+              'text-danger': isDesaprobado(boletaEstudiante.promedioFinal)
+            }"
+          >
+            {{ boletaEstudiante.promedioFinal !== null && boletaEstudiante.promedioFinal !== undefined ? boletaEstudiante.promedioFinal : '--' }}
+          </div>
+        </div>
+
+        <!-- Observaciones del Docente -->
+        <div class="boleta-feedback-box mt-3" *ngIf="boletaEstudiante.observaciones">
+          <i class="bi bi-chat-quote-fill"></i>
+          <div>
+            <strong>Retroalimentación del Docente:</strong>
+            <p class="mt-1 mb-0">{{ boletaEstudiante.observaciones }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-primary" (click)="cerrarModalBoleta()">
+          <i class="bi bi-check2"></i> Cerrar Boleta
         </button>
       </div>
     </div>

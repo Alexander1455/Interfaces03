@@ -3,7 +3,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { delay } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, UserRole } from '../models/auth.model';
 import { Usuario, UsuarioCreateDto, UsuarioUpdateDto } from '../models/usuario.model';
-import { Curso, CursoCreateDto, CursoUpdateDto, Matricula } from '../models/curso.model';
+import { Curso, CursoCreateDto, CursoUpdateDto, Matricula, ActualizarNotaItemDto } from '../models/curso.model';
 
 @Injectable({
   providedIn: 'root'
@@ -14,10 +14,247 @@ export class MockBackendService {
   private readonly ENROLLMENTS_KEY = 'idat_academic_enrollments';
 
   private defaultEnrollments: Matricula[] = [
-    { id: 1, estudianteId: 3, cursoId: 1, fechaMatricula: '2025-03-05' },
-    { id: 2, estudianteId: 3, cursoId: 3, fechaMatricula: '2025-03-06' },
-    { id: 3, estudianteId: 5, cursoId: 1, fechaMatricula: '2025-03-10' },
-    { id: 4, estudianteId: 5, cursoId: 2, fechaMatricula: '2025-03-11' }
+    // Curso 1: Desarrollo de Interfaces 3 (Docente: Dra. María Rodríguez)
+    {
+      id: 1,
+      estudianteId: 3,
+      cursoId: 1,
+      fechaMatricula: '2026-03-05',
+      notaEC1: 17,
+      notaEC2: 16,
+      notaEC3: 18,
+      notaEF: 17,
+      promedioFinal: 17.0,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Excelente desempeño en Angular y TypeScript.'
+    },
+    {
+      id: 2,
+      estudianteId: 5,
+      cursoId: 1,
+      fechaMatricula: '2026-03-10',
+      notaEC1: 15,
+      notaEC2: 14,
+      notaEC3: 16,
+      notaEF: 15,
+      promedioFinal: 15.0,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Buen trabajo en los componentes reactivos.'
+    },
+    {
+      id: 3,
+      estudianteId: 6,
+      cursoId: 1,
+      fechaMatricula: '2026-03-11',
+      notaEC1: 18,
+      notaEC2: 19,
+      notaEC3: 18,
+      notaEF: 19,
+      promedioFinal: 18.6,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Sobresaliente dominio de Guards e Interceptores JWT.'
+    },
+    {
+      id: 4,
+      estudianteId: 7,
+      cursoId: 1,
+      fechaMatricula: '2026-03-12',
+      notaEC1: 11,
+      notaEC2: 10,
+      notaEC3: 12,
+      notaEF: 10,
+      promedioFinal: 10.6,
+      estadoAcademico: 'DESAPROBADO',
+      observaciones: 'Requiere reforzar programación asíncrona con RxJS.'
+    },
+    {
+      id: 5,
+      estudianteId: 8,
+      cursoId: 1,
+      fechaMatricula: '2026-03-13',
+      notaEC1: 16,
+      notaEC2: 15,
+      notaEC3: null,
+      notaEF: null,
+      promedioFinal: 15.5,
+      estadoAcademico: 'EN_CURSO',
+      observaciones: 'Evaluaciones continuas en progreso.'
+    },
+    {
+      id: 6,
+      estudianteId: 9,
+      cursoId: 1,
+      fechaMatricula: '2026-03-14',
+      notaEC1: 14,
+      notaEC2: 16,
+      notaEC3: 15,
+      notaEF: 16,
+      promedioFinal: 15.4,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Participativo y puntual en entregas.'
+    },
+
+    // Curso 2: Arquitectura de Microservicios con Spring Boot (Docente: Ing. Roberto Silva)
+    {
+      id: 7,
+      estudianteId: 3,
+      cursoId: 2,
+      fechaMatricula: '2026-03-06',
+      notaEC1: 15,
+      notaEC2: 16,
+      notaEC3: 15,
+      notaEF: 16,
+      promedioFinal: 15.6,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Buen modelado de APIs RESTful.'
+    },
+    {
+      id: 8,
+      estudianteId: 10,
+      cursoId: 2,
+      fechaMatricula: '2026-03-10',
+      notaEC1: 18,
+      notaEC2: 17,
+      notaEC3: 19,
+      notaEF: 18,
+      promedioFinal: 18.0,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Excelente implementación de Docker y Spring Security.'
+    },
+    {
+      id: 9,
+      estudianteId: 11,
+      cursoId: 2,
+      fechaMatricula: '2026-03-11',
+      notaEC1: 13,
+      notaEC2: 12,
+      notaEC3: 14,
+      notaEF: 13,
+      promedioFinal: 13.0,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Aprobado satisfactoriamente.'
+    },
+    {
+      id: 10,
+      estudianteId: 12,
+      cursoId: 2,
+      fechaMatricula: '2026-03-12',
+      notaEC1: 16,
+      notaEC2: 17,
+      notaEC3: null,
+      notaEF: null,
+      promedioFinal: 16.5,
+      estadoAcademico: 'EN_CURSO',
+      observaciones: 'Pendiente entrega de examen final.'
+    },
+
+    // Curso 3: Bases de Datos Relacionales y NoSQL (Docente: Dra. María Rodríguez)
+    {
+      id: 11,
+      estudianteId: 5,
+      cursoId: 3,
+      fechaMatricula: '2026-03-08',
+      notaEC1: 18,
+      notaEC2: 17,
+      notaEC3: 19,
+      notaEF: 18,
+      promedioFinal: 18.0,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Gran dominio de consultas complejas y MongoDB.'
+    },
+    {
+      id: 12,
+      estudianteId: 7,
+      cursoId: 3,
+      fechaMatricula: '2026-03-09',
+      notaEC1: 14,
+      notaEC2: 15,
+      notaEC3: 13,
+      notaEF: 14,
+      promedioFinal: 13.9,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Cumplió los objetivos del curso.'
+    },
+    {
+      id: 13,
+      estudianteId: 9,
+      cursoId: 3,
+      fechaMatricula: '2026-03-10',
+      notaEC1: 17,
+      notaEC2: 16,
+      notaEC3: 17,
+      notaEF: 17,
+      promedioFinal: 16.8,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Muy buen trabajo en indexación SQL.'
+    },
+    {
+      id: 14,
+      estudianteId: 13,
+      cursoId: 3,
+      fechaMatricula: '2026-03-11',
+      notaEC1: 11,
+      notaEC2: 12,
+      notaEC3: 11,
+      notaEF: 11,
+      promedioFinal: 11.2,
+      estadoAcademico: 'DESAPROBADO',
+      observaciones: 'Debe reforzar optimización de consultas SQL.'
+    },
+
+    // Curso 4: Seguridad en Aplicaciones Web & JWT (Docente: Ing. Roberto Silva)
+    {
+      id: 15,
+      estudianteId: 6,
+      cursoId: 4,
+      fechaMatricula: '2026-03-07',
+      notaEC1: 19,
+      notaEC2: 19,
+      notaEC3: 20,
+      notaEF: 19,
+      promedioFinal: 19.2,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Excelente proyecto de mitigación de vulnerabilidades OWASP.'
+    },
+    {
+      id: 16,
+      estudianteId: 8,
+      cursoId: 4,
+      fechaMatricula: '2026-03-08',
+      notaEC1: 15,
+      notaEC2: 16,
+      notaEC3: 16,
+      notaEF: 15,
+      promedioFinal: 15.4,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Muy buen trabajo en interceptores HTTP.'
+    },
+    {
+      id: 17,
+      estudianteId: 10,
+      cursoId: 4,
+      fechaMatricula: '2026-03-09',
+      notaEC1: 14,
+      notaEC2: 15,
+      notaEC3: 14,
+      notaEF: 15,
+      promedioFinal: 14.6,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Aprobado satisfactoriamente.'
+    },
+    {
+      id: 18,
+      estudianteId: 13,
+      cursoId: 4,
+      fechaMatricula: '2026-03-10',
+      notaEC1: 16,
+      notaEC2: 16,
+      notaEC3: 17,
+      notaEF: 16,
+      promedioFinal: 16.2,
+      estadoAcademico: 'APROBADO',
+      observaciones: 'Buen análisis de tokens y criptografía.'
+    }
   ];
 
   private defaultUsers: Usuario[] = [
@@ -26,10 +263,10 @@ export class MockBackendService {
       nombreCompleto: 'Alexander García (Administrador)',
       email: 'admin@idat.edu.pe',
       rol: 'ADMIN',
-      codigoInstitucional: 'ADM-2025-01',
+      codigoInstitucional: 'ADM-2026-01',
       estado: true,
       telefono: '+51 987 654 321',
-      fechaCreacion: '2025-01-15'
+      fechaCreacion: '2026-01-15'
     },
     {
       id: 2,
@@ -39,7 +276,7 @@ export class MockBackendService {
       codigoInstitucional: 'DOC-1004-92',
       estado: true,
       telefono: '+51 912 345 678',
-      fechaCreacion: '2025-02-10'
+      fechaCreacion: '2026-02-10'
     },
     {
       id: 3,
@@ -49,7 +286,7 @@ export class MockBackendService {
       codigoInstitucional: 'EST-8841-20',
       estado: true,
       telefono: '+51 998 712 334',
-      fechaCreacion: '2025-03-01'
+      fechaCreacion: '2026-03-01'
     },
     {
       id: 4,
@@ -59,7 +296,7 @@ export class MockBackendService {
       codigoInstitucional: 'DOC-1005-14',
       estado: true,
       telefono: '+51 933 221 445',
-      fechaCreacion: '2025-02-20'
+      fechaCreacion: '2026-02-20'
     },
     {
       id: 5,
@@ -69,7 +306,87 @@ export class MockBackendService {
       codigoInstitucional: 'EST-9122-31',
       estado: true,
       telefono: '+51 944 556 677',
-      fechaCreacion: '2025-03-12'
+      fechaCreacion: '2026-03-12'
+    },
+    {
+      id: 6,
+      nombreCompleto: 'Andrea Morales Vásquez (Estudiante)',
+      email: 'amorales@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9201-15',
+      estado: true,
+      telefono: '+51 955 667 788',
+      fechaCreacion: '2026-03-13'
+    },
+    {
+      id: 7,
+      nombreCompleto: 'Diego Quispe Ramírez (Estudiante)',
+      email: 'dquispe@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9340-22',
+      estado: true,
+      telefono: '+51 966 778 899',
+      fechaCreacion: '2026-03-14'
+    },
+    {
+      id: 8,
+      nombreCompleto: 'Valeria Torres Sánchez (Estudiante)',
+      email: 'vtorres@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9411-08',
+      estado: true,
+      telefono: '+51 977 889 900',
+      fechaCreacion: '2026-03-15'
+    },
+    {
+      id: 9,
+      nombreCompleto: 'Mateo Huamán Castillo (Estudiante)',
+      email: 'mhuaman@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9520-44',
+      estado: true,
+      telefono: '+51 988 990 011',
+      fechaCreacion: '2026-03-16'
+    },
+    {
+      id: 10,
+      nombreCompleto: 'Camila Flores Benítez (Estudiante)',
+      email: 'cflores@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9630-51',
+      estado: true,
+      telefono: '+51 911 223 344',
+      fechaCreacion: '2026-03-17'
+    },
+    {
+      id: 11,
+      nombreCompleto: 'Sebastián Ramos Paredes (Estudiante)',
+      email: 'sramos@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9740-63',
+      estado: true,
+      telefono: '+51 922 334 455',
+      fechaCreacion: '2026-03-18'
+    },
+    {
+      id: 12,
+      nombreCompleto: 'Gabriela Chávez Medina (Estudiante)',
+      email: 'gchavez@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9850-77',
+      estado: true,
+      telefono: '+51 933 445 566',
+      fechaCreacion: '2026-03-19'
+    },
+    {
+      id: 13,
+      nombreCompleto: 'Joaquín Espinoza Rojas (Estudiante)',
+      email: 'jespinoza@idat.edu.pe',
+      rol: 'ESTUDIANTE',
+      codigoInstitucional: 'EST-9960-89',
+      estado: true,
+      telefono: '+51 944 556 678',
+      fechaCreacion: '2026-03-20'
     }
   ];
 
@@ -87,8 +404,8 @@ export class MockBackendService {
       cuposTotales: 30,
       estado: true,
       horario: 'Lun - Mie 19:00 - 21:30',
-      fechaInicio: '17 de Marzo de 2025 (Ciclo 2025-I)',
-      fechaFin: '18 de Julio de 2025 (Fin Semestre)'
+      fechaInicio: '16 de Marzo de 2026 (Ciclo 2026-I)',
+      fechaFin: '17 de Julio de 2026 (Fin Semestre)'
     },
     {
       id: 2,
@@ -103,8 +420,8 @@ export class MockBackendService {
       cuposTotales: 25,
       estado: true,
       horario: 'Mar - Jue 18:30 - 21:00',
-      fechaInicio: '01 de Abril de 2025 (Ciclo 2025-I)',
-      fechaFin: '01 de Agosto de 2025 (Fin Semestre)'
+      fechaInicio: '01 de Abril de 2026 (Ciclo 2026-I)',
+      fechaFin: '31 de Julio de 2026 (Fin Evaluaciones)'
     },
     {
       id: 3,
@@ -119,8 +436,8 @@ export class MockBackendService {
       cuposTotales: 35,
       estado: true,
       horario: 'Sab 08:00 - 13:00',
-      fechaInicio: '05 de Mayo de 2025 (Ciclo Modular)',
-      fechaFin: '19 de Diciembre de 2025 (Fin Semestre)'
+      fechaInicio: '04 de Mayo de 2026 (Ciclo Modular)',
+      fechaFin: '18 de Diciembre de 2026 (Fin Semestre)'
     },
     {
       id: 4,
@@ -135,8 +452,8 @@ export class MockBackendService {
       cuposTotales: 20,
       estado: true,
       horario: 'Vie 19:00 - 22:00',
-      fechaInicio: '18 de Agosto de 2025 (Ciclo 2025-II)',
-      fechaFin: '19 de Diciembre de 2025 (Fin Semestre)'
+      fechaInicio: '17 de Agosto de 2026 (Ciclo 2026-II)',
+      fechaFin: '18 de Diciembre de 2026 (Fin Semestre)'
     }
   ];
 
@@ -151,7 +468,21 @@ export class MockBackendService {
   private getStoredUsers(): Usuario[] {
     if (!this.isBrowser()) return [...this.defaultUsers];
     const data = localStorage.getItem(this.USERS_KEY);
-    return data ? JSON.parse(data) : [...this.defaultUsers];
+    if (!data) return [...this.defaultUsers];
+    try {
+      const parsed: Usuario[] = JSON.parse(data);
+      // Asegurar que usuarios predefinidos existan siempre (ej. nuevos alumnos creados)
+      const existingIds = new Set(parsed.map(u => u.id));
+      const missingUsers = this.defaultUsers.filter(u => !existingIds.has(u.id));
+      if (missingUsers.length > 0) {
+        const merged = [...parsed, ...missingUsers];
+        localStorage.setItem(this.USERS_KEY, JSON.stringify(merged));
+        return merged;
+      }
+      return parsed;
+    } catch {
+      return [...this.defaultUsers];
+    }
   }
 
   private setStoredUsers(users: Usuario[]): void {
@@ -166,13 +497,20 @@ export class MockBackendService {
     if (!data) return [...this.defaultCourses];
     try {
       const parsed: Curso[] = JSON.parse(data);
-      // Garantizar que cursos preexistentes tengan fechaInicio y fechaFin
+      // Garantizar que cursos preexistentes se actualicen al año vigente (2026/2027)
       return parsed.map((c, index) => {
         const fallback = this.defaultCourses[index % this.defaultCourses.length];
+        let fInicio = c.fechaInicio || fallback?.fechaInicio || '16 de Marzo de 2026 (Ciclo 2026-I)';
+        let fFin = c.fechaFin || fallback?.fechaFin || '17 de Julio de 2026 (Fin Semestre)';
+
+        // Migración automática de 2025 a 2026
+        fInicio = fInicio.replace(/2025/g, '2026');
+        fFin = fFin.replace(/2025/g, '2026');
+
         return {
           ...c,
-          fechaInicio: c.fechaInicio || fallback?.fechaInicio || '17 de Marzo de 2025 (Ciclo 2025-I)',
-          fechaFin: c.fechaFin || fallback?.fechaFin || '18 de Julio de 2025 (Fin Semestre)'
+          fechaInicio: fInicio,
+          fechaFin: fFin
         };
       });
     } catch {
@@ -186,10 +524,67 @@ export class MockBackendService {
     }
   }
 
+  private enrichEnrollment(m: Matricula, users: Usuario[], courses: Curso[]): Matricula {
+    const user = users.find(u => u.id === m.estudianteId);
+    const course = courses.find(c => c.id === m.cursoId);
+    
+    // Cálculo de promedio y estado académico
+    let promedio = m.promedioFinal;
+    let estado: 'APROBADO' | 'DESAPROBADO' | 'EN_CURSO' = m.estadoAcademico || 'EN_CURSO';
+
+    if (m.notaEC1 != null && m.notaEC2 != null && m.notaEC3 != null && m.notaEF != null) {
+      promedio = Number(((Number(m.notaEC1) * 0.2) + (Number(m.notaEC2) * 0.2) + (Number(m.notaEC3) * 0.2) + (Number(m.notaEF) * 0.4)).toFixed(1));
+      estado = promedio >= 12.5 ? 'APROBADO' : 'DESAPROBADO';
+    } else {
+      const validNotas = [m.notaEC1, m.notaEC2, m.notaEC3, m.notaEF].filter(n => n != null && !isNaN(Number(n))) as number[];
+      if (validNotas.length > 0) {
+        promedio = Number((validNotas.reduce((a, b) => a + Number(b), 0) / validNotas.length).toFixed(1));
+        estado = 'EN_CURSO';
+      } else {
+        promedio = null;
+        estado = 'EN_CURSO';
+      }
+    }
+
+    return {
+      ...m,
+      estudianteNombre: user ? user.nombreCompleto : (m.estudianteNombre || 'Estudiante'),
+      estudianteCodigo: user ? user.codigoInstitucional : (m.estudianteCodigo || `EST-${m.estudianteId}`),
+      estudianteEmail: user ? user.email : '',
+      cursoNombre: course ? course.nombre : (m.cursoNombre || 'Asignatura'),
+      cursoCodigo: course ? course.codigo : (m.cursoCodigo || 'CUR-000'),
+      promedioFinal: promedio,
+      estadoAcademico: estado
+    };
+  }
+
   private getStoredEnrollments(): Matricula[] {
-    if (!this.isBrowser()) return [...this.defaultEnrollments];
+    const users = this.getStoredUsers();
+    const courses = this.getStoredCourses();
+
+    if (!this.isBrowser()) {
+      return this.defaultEnrollments.map(m => this.enrichEnrollment(m, users, courses));
+    }
+
     const data = localStorage.getItem(this.ENROLLMENTS_KEY);
-    return data ? JSON.parse(data) : [...this.defaultEnrollments];
+    if (!data) {
+      const enriched = this.defaultEnrollments.map(m => this.enrichEnrollment(m, users, courses));
+      localStorage.setItem(this.ENROLLMENTS_KEY, JSON.stringify(enriched));
+      return enriched;
+    }
+
+    try {
+      const parsed: Matricula[] = JSON.parse(data);
+      // Asegurar que si el storage previo tenía pocas matrículas, se sincronicen las por defecto
+      const existingKeySet = new Set(parsed.map(p => `${p.estudianteId}-${p.cursoId}`));
+      const missingEnrollments = this.defaultEnrollments.filter(d => !existingKeySet.has(`${d.estudianteId}-${d.cursoId}`));
+      
+      const allEnrollments = missingEnrollments.length > 0 ? [...parsed, ...missingEnrollments] : parsed;
+      const enriched = allEnrollments.map(m => this.enrichEnrollment(m, users, courses));
+      return enriched;
+    } catch {
+      return this.defaultEnrollments.map(m => this.enrichEnrollment(m, users, courses));
+    }
   }
 
   private setStoredEnrollments(enrollments: Matricula[]): void {
@@ -383,8 +778,8 @@ export class MockBackendService {
       cuposTotales: Number(dto.cuposTotales),
       estado: dto.estado ?? true,
       horario: dto.horario,
-      fechaInicio: dto.fechaInicio || '17 de Marzo de 2025 (Ciclo 2025-I)',
-      fechaFin: dto.fechaFin || '18 de Julio de 2025 (Fin Semestre)'
+      fechaInicio: dto.fechaInicio || '16 de Marzo de 2026 (Ciclo 2026-I)',
+      fechaFin: dto.fechaFin || '17 de Julio de 2026 (Fin Semestre)'
     };
 
     courses.push(nuevoCurso);
@@ -519,6 +914,63 @@ export class MockBackendService {
 
     this.setStoredEnrollments(enrollments);
     return of(true).pipe(delay(200));
+  }
+
+  // --- GESTIÓN Y ASIGNACIÓN DE NOTAS (DOCENTES & ALUMNOS) ---
+  public getMatriculasPorCurso(cursoId: number): Observable<Matricula[]> {
+    const enrollments = this.getStoredEnrollments();
+    const cursoEnrollments = enrollments.filter(e => e.cursoId === cursoId);
+    return of(cursoEnrollments).pipe(delay(200));
+  }
+
+  public guardarNotasCurso(cursoId: number, notasList: ActualizarNotaItemDto[]): Observable<Matricula[]> {
+    let enrollments = this.getStoredEnrollments();
+    const users = this.getStoredUsers();
+    const courses = this.getStoredCourses();
+
+    notasList.forEach(dto => {
+      const idx = enrollments.findIndex(e => e.id === dto.matriculaId);
+      if (idx !== -1) {
+        enrollments[idx] = {
+          ...enrollments[idx],
+          notaEC1: dto.notaEC1 !== undefined ? dto.notaEC1 : enrollments[idx].notaEC1,
+          notaEC2: dto.notaEC2 !== undefined ? dto.notaEC2 : enrollments[idx].notaEC2,
+          notaEC3: dto.notaEC3 !== undefined ? dto.notaEC3 : enrollments[idx].notaEC3,
+          notaEF: dto.notaEF !== undefined ? dto.notaEF : enrollments[idx].notaEF,
+          observaciones: dto.observaciones !== undefined ? dto.observaciones : enrollments[idx].observaciones
+        };
+        enrollments[idx] = this.enrichEnrollment(enrollments[idx], users, courses);
+      }
+    });
+
+    this.setStoredEnrollments(enrollments);
+    const updatedCursoEnrollments = enrollments.filter(e => e.cursoId === cursoId);
+    return of(updatedCursoEnrollments).pipe(delay(300));
+  }
+
+  public actualizarNotas(matriculaId: number, dto: ActualizarNotaItemDto): Observable<Matricula> {
+    let enrollments = this.getStoredEnrollments();
+    const users = this.getStoredUsers();
+    const courses = this.getStoredCourses();
+    const idx = enrollments.findIndex(e => e.id === matriculaId);
+
+    if (idx === -1) {
+      return throwError(() => ({ status: 404, error: { message: 'Matrícula no encontrada para asignar notas.' } }));
+    }
+
+    enrollments[idx] = {
+      ...enrollments[idx],
+      notaEC1: dto.notaEC1 !== undefined ? dto.notaEC1 : enrollments[idx].notaEC1,
+      notaEC2: dto.notaEC2 !== undefined ? dto.notaEC2 : enrollments[idx].notaEC2,
+      notaEC3: dto.notaEC3 !== undefined ? dto.notaEC3 : enrollments[idx].notaEC3,
+      notaEF: dto.notaEF !== undefined ? dto.notaEF : enrollments[idx].notaEF,
+      observaciones: dto.observaciones !== undefined ? dto.observaciones : enrollments[idx].observaciones
+    };
+
+    enrollments[idx] = this.enrichEnrollment(enrollments[idx], users, courses);
+    this.setStoredEnrollments(enrollments);
+
+    return of(enrollments[idx]).pipe(delay(250));
   }
 }
 
