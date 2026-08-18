@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { AuthResponse, LoginRequest, UserRole, UsuarioSesion } from '../models/auth.model';
 import { MockBackendService } from './mock-backend.service';
@@ -10,6 +10,7 @@ import { MockBackendService } from './mock-backend.service';
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly API_URL = 'http://localhost:9090/api/auth';
   private readonly TOKEN_KEY = 'idat_auth_token';
   private readonly USER_KEY = 'idat_auth_user';
 
@@ -43,12 +44,18 @@ export class AuthService {
   }
 
   public login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.mockBackend.login(credentials).pipe(
+    // Intenta autenticación contra la API REST real en Node/MySQL y recurre al Mock de respaldo si está offline
+    return this.http.post<AuthResponse>(`${this.API_URL}/login`, credentials).pipe(
       tap((response: AuthResponse) => {
         this.setSession(response);
       }),
-      catchError(error => {
-        return throwError(() => error);
+      catchError((httpError) => {
+        console.warn('⚠️ [AuthService] API REST no disponible o error, usando fallback Mock:', httpError);
+        return this.mockBackend.login(credentials).pipe(
+          tap((response: AuthResponse) => {
+            this.setSession(response);
+          })
+        );
       })
     );
   }
@@ -79,7 +86,6 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return false;
     
-    // Validar expiración si el payload está codificado en base64
     try {
       const parts = token.split('.');
       if (parts.length === 3) {

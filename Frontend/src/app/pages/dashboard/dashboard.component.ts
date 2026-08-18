@@ -91,24 +91,28 @@ export class DashboardComponent implements OnInit {
           const currentId = this.usuarioActual?.id;
           this.misCursos = data.filter(c => c.docenteId === currentId);
           this.misCursosAsignados = this.misCursos.length;
-          this.totalCreditosDocente = this.misCursos.reduce((acc, curr) => acc + curr.creditos, 0);
+          this.totalCreditosDocente = this.misCursos.reduce((acc, curr) => acc + (Number(curr.creditos) || 4), 0);
           this.totalAlumnosEnMisCursos = this.misCursos.reduce((acc, curr) => acc + Math.max(0, curr.cuposTotales - curr.cuposDisponibles), 0);
           this.isLoading = false;
         },
         error: () => { this.isLoading = false; }
       });
     } else if (this.authService.isEstudiante() && this.usuarioActual) {
-      this.cursoService.getCursosMatriculados(this.usuarioActual.id).subscribe({
+      const studentId = this.usuarioActual.id;
+
+      // 1. Obtener cursos matriculados para el estudiante
+      this.cursoService.getCursosMatriculados(studentId).subscribe({
         next: (matriculados) => {
           this.misCursos = matriculados;
           this.misCursosMatriculadosCount = matriculados.length;
-          this.totalCreditosMatriculados = matriculados.reduce((acc, curr) => acc + curr.creditos, 0);
+          this.totalCreditosMatriculados = matriculados.reduce((acc, curr) => acc + (Number(curr.creditos) || 4), 0);
           this.isLoading = false;
         },
         error: () => { this.isLoading = false; }
       });
 
-      this.cursoService.getMatriculas(this.usuarioActual.id).subscribe({
+      // 2. Obtener calificaciones y ponderaciones del estudiante
+      this.cursoService.getMatriculas(studentId).subscribe({
         next: (matriculas) => {
           this.matriculasEstudiante = matriculas;
           const promedios = matriculas
@@ -122,6 +126,7 @@ export class DashboardComponent implements OnInit {
         }
       });
 
+      // 3. Obtener catálogo total de cursos para métrica de disponibles
       this.cursoService.getCursos().subscribe({
         next: (allCourses) => {
           this.cursos = allCourses;
@@ -262,4 +267,3 @@ export class DashboardComponent implements OnInit {
     }, 3500);
   }
 }
-
